@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>长度单位 - 教学资源平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .back-btn {
+            align-self: flex-start;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-btn:hover { opacity: 1; }
+
+        h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin: 5px 0 12px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: 560px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            width: 100%;
+        }
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #4a4a4a;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ===== 单位认知卡片 ===== */
+        .unit-list { display: flex; flex-direction: column; gap: 10px; }
+        .unit-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 2px solid transparent;
+        }
+        .unit-item:hover { transform: translateX(4px); }
+        .unit-item.active { border-color: #667eea; background: #f0f1ff; }
+        .unit-icon { font-size: 2rem; flex-shrink: 0; width: 44px; text-align: center; }
+        .unit-info { flex: 1; }
+        .unit-name { font-size: 1.05rem; font-weight: bold; color: #333; }
+        .unit-abbr { font-size: 0.85rem; color: #888; margin-left: 6px; }
+        .unit-desc { font-size: 0.85rem; color: #666; margin-top: 3px; line-height: 1.5; }
+        .unit-bar-wrap { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+        .unit-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+        /* ===== 可视化尺子 ===== */
+        .ruler-section { position: relative; }
+        .ruler-display {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .ruler-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Consolas', monospace;
+        }
+        .ruler-unit-label { font-size: 1rem; color: #888; margin-left: 4px; }
+        .ruler-canvas-wrap {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            background: #fafafa;
+            border: 1px solid #e0e0e0;
+        }
+        #rulerCanvas { display: block; }
+        .ruler-slider-wrap { margin-top: 12px; }
+        .ruler-slider-wrap input[type=range] {
+            width: 100%;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+        .ruler-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 2px;
+        }
+        .ruler-equiv {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.95rem;
+            color: #555;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 10px;
+            line-height: 1.7;
+        }
+        .ruler-equiv b { color: #667eea; }
+
+        /* ===== 换算关系卡片 ===== */
+        .relation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .relation-item {
+            background: #f5f5f5;
+            border-radius: 10px;
+            padding: 12px 10px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #444;
+            line-height: 1.6;
+            transition: background 0.2s;
+        }
+        .relation-item:hover { background: #eef; }
+        .relation-item .r-big { font-size: 1.2rem; font-weight: bold; color: #667eea; display: block; }
+
+        /* ===== 换算练习 ===== */
+        .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .mode-tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+            background: #e8eaf6; color: #666; font-family: inherit;
+        }
+        .mode-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+        .learn-panel { display: block; }
+        .learn-panel.hidden { display: none; }
+        .quiz-panel { display: none; }
+        .quiz-panel.active { display: block; }
+
+        .quiz-question {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 14px;
+            padding: 16px;
+            background: #f5f5f5;
+            border-radius: 12px;
+            line-height: 1.8;
+        }
+        .quiz-question .q-val { color: #667eea; font-weight: bold; font-size: 1.6rem; }
+        .quiz-question .q-unit { color: #764ba2; font-weight: bold; font-size: 1.2rem; }
+
+        .quiz-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .quiz-input {
+            width: 140px;
+            padding: 10px 14px;
+            font-size: 1.3rem;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            font-family: 'Consolas', monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .quiz-input:focus { border-color: #667eea; }
+        .quiz-input-unit { font-size: 1.1rem; color: #764ba2; font-weight: bold; }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            padding: 10px 16px; border: none; border-radius: 10px;
+            font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; flex: 1; min-width: 100px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-success { background: linear-gradient(135deg, #43A047, #66BB6A); color: #fff; }
+        .btn-success:hover { box-shadow: 0 4px 15px rgba(67,160,71,0.4); }
+        .btn-secondary { background: #e8eaf6; color: #555; }
+        .btn-secondary:hover { background: #c5cae9; }
+
+        .quiz-score {
+            display: flex; justify-content: center; gap: 20px;
+            margin-bottom: 12px; font-size: 0.95rem; color: #666;
+        }
+        .quiz-score span { font-weight: bold; }
+        .score-correct { color: #43A047; }
+        .score-wrong { color: #E53935; }
+
+        .quiz-result {
+            text-align: center; font-size: 1.05rem; padding: 12px;
+            border-radius: 10px; margin-top: 10px; display: none; line-height: 1.7;
+        }
+        .quiz-result.correct { background: #E8F5E9; color: #2E7D32; display: block; }
+        .quiz-result.wrong { background: #FFEBEE; color: #C62828; display: block; }
+
+        .tip {
+            text-align: center; color: #999; font-size: 0.85rem;
+            background: rgba(255,255,255,0.7); border-radius: 10px;
+            padding: 10px; max-width: 560px; width: 100%;
+        }
+
+        @media (max-width: 420px) {
+            h1 { font-size: 1.5rem; }
+            .ruler-value { font-size: 1.8rem; }
+            .relation-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">← 返回首页</a>
+    <h1>📏 长度单位</h1>
+
+    <div class="main-container">
+        <!-- 单位认知 -->
+        <div class="card">
+            <div class="card-title">🔍 认识长度单位（点击查看详情）</div>
+            <div class="unit-list" id="unitList"></div>
+        </div>
+
+        <!-- 可视化尺子 -->
+        <div class="card ruler-section">
+            <div class="card-title">📐 可视化尺子</div>
+            <div class="ruler-display">
+                <span class="ruler-value" id="rulerValue">1</span>
+                <span class="ruler-unit-label" id="rulerUnitLabel">厘米 (cm)</span>
+            </div>
+            <div class="ruler-canvas-wrap">
+                <canvas id="rulerCanvas" width="520" height="120"></canvas>
+            </div>
+            <div class="ruler-slider-wrap">
+                <input type="range" id="rulerSlider" min="0" max="100" value="1" step="1">
+                <div class="ruler-slider-labels">
+                    <span id="sliderMin">0</span>
+                    <span id="sliderMax">100</span>
+                </div>
+            </div>
+            <div class="ruler-equiv" id="rulerEquiv">
+                <b>1 厘米</b> = 10 毫米 = 0.1 分米
+            </div>
+        </div>
+
+        <!-- 换算关系 -->
+        <div class="card">
+            <div class="card-title">🔗 单位换算关系</div>
+            <div class="relation-grid">
+                <div class="relation-item"><span class="r-big">10 毫米 = 1 厘米</span>mm → cm</div>
+                <div class="relation-item"><span class="r-big">10 厘米 = 1 分米</span>cm → dm</div>
+                <div class="relation-item"><span class="r-big">10 分米 = 1 米</span>dm → m</div>
+                <div class="relation-item"><span class="r-big">1000 米 = 1 千米</span>m → km</div>
+                <div class="relation-item"><span class="r-big">100 厘米 = 1 米</span>cm → m</div>
+                <div class="relation-item"><span class="r-big">100000 厘米 = 1 千米</span>cm → km</div>
+            </div>
+        </div>
+
+        <!-- 学习/练习切换 -->
+        <div class="card">
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="learn">📖 单位对照</button>
+                <button class="mode-tab" data-mode="quiz">📝 换算练习</button>
+            </div>
+
+            <div id="learnPanel" class="learn-panel">
+                <div id="comparisonArea" style="text-align:center; color:#555; line-height:2;">
+                    <p>🖊️ 一支铅笔约 <b>18 厘米</b></p>
+                    <p>📖 一本课本约 <b>26 厘米</b></p>
+                    <p>🚪 一扇门高约 <b>2 米</b></p>
+                    <p>🏫 教室长约 <b>9 米</b></p>
+                    <p>🏃 操场一圈约 <b>200 米</b></p>
+                    <p>🚗 两城相距约 <b>50 千米</b></p>
+                </div>
+            </div>
+
+            <div id="quizPanel" class="quiz-panel">
+                <div class="quiz-score">
+                    ✅ 正确: <span class="score-correct" id="scoreCorrect">0</span>
+                    &nbsp;&nbsp;
+                    ❌ 错误: <span class="score-wrong" id="scoreWrong">0</span>
+                </div>
+                <div class="quiz-question" id="quizQuestion">
+                    <span class="q-val" id="qVal">5</span>
+                    <span class="q-unit" id="qFromUnit">厘米</span>
+                    = 
+                    <span class="q-val" id="qAns">?</span>
+                    <span class="q-unit" id="qToUnit">毫米</span>
+                </div>
+                <div class="quiz-input-row">
+                    <input type="number" class="quiz-input" id="quizInput" placeholder="?" step="any">
+                    <span class="quiz-input-unit" id="quizInputUnit">毫米</span>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-success" id="btnCheck">✅ 检查答案</button>
+                    <button class="btn btn-secondary" id="btnSkip">⏭ 换一题</button>
+                </div>
+                <div class="quiz-result" id="quizResult"></div>
+            </div>
+        </div>
+
+        <div class="tip">💡 记住口诀：相邻长度单位之间的进率是 <b>10</b>（千米和米之间是 1000）</div>
+    </div>
+
+<script>
+(function() {
+    /* ===== 单位数据 ===== */
+    const UNITS = [
+        { name: '毫米', abbr: 'mm', icon: '🔬', color: '#EF5350',
+          desc: '最小的常用长度单位，一枚硬币的厚度约 1 毫米', toMM: 1 },
+        { name: '厘米', abbr: 'cm', icon: '📏', color: '#FF7043',
+          desc: '最常用的长度单位，食指宽度约 1 厘米', toMM: 10 },
+        { name: '分米', abbr: 'dm', icon: '📐', color: '#FFA726',
+          desc: '手掌张开（一拃）约 1 分米', toMM: 100 },
+        { name: '米', abbr: 'm', icon: '🚶', color: '#66BB6A',
+          desc: '一步大约 1 米，教室门高约 2 米', toMM: 1000 },
+        { name: '千米', abbr: 'km', icon: '🚗', color: '#42A5F5',
+          desc: '又叫"公里"，步行 12 分钟约走 1 千米', toMM: 1000000 }
+    ];
+
+    /* ===== 渲染单位列表 ===== */
+    const unitListEl = document.getElementById('unitList');
+    let activeUnitIdx = 1; // 默认厘米
+
+    function renderUnits() {
+        unitListEl.innerHTML = '';
+        UNITS.forEach((u, i) => {
+            const div = document.createElement('div');
+            div.className = 'unit-item' + (i === activeUnitIdx ? ' active' : '');
+            const barW = Math.log10(u.toMM + 1) / 6 * 100;
+            div.innerHTML = `
+                <div class="unit-icon">${u.icon}</div>
+                <div class="unit-info">
+                    <div><span class="unit-name">${u.name}</span><span class="unit-abbr">(${u.abbr})</span></div>
+                    <div class="unit-desc">${u.desc}</div>
+                    <div class="unit-bar-wrap"><div class="unit-bar" style="width:${barW}%;background:${u.color}"></div></div>
+                </div>
+            `;
+            div.addEventListener('click', () => {
+                activeUnitIdx = i;
+                renderUnits();
+                syncRulerToUnit(i);
+            });
+            unitListEl.appendChild(div);
+        });
+    }
+    renderUnits();
+
+    /* ===== 尺子可视化 ===== */
+    const canvas = document.getElementById('rulerCanvas');
+    const ctx = canvas.getContext('2d');
+    const rulerSlider = document.getElementById('rulerSlider');
+    const rulerValue = document.getElementById('rulerValue');
+    const rulerUnitLabel = document.getElementById('rulerUnitLabel');
+    const rulerEquiv = document.getElementById('rulerEquiv');
+    const sliderMin = document.getElementById('sliderMin');
+    const sliderMax = document.getElementById('sliderMax');
+
+    // 尺子配置：每个单位对应的滑块范围和步长
+    const RULER_CFG = [
+        { max: 100, step: 1, label: '毫米 (mm)', maxVal: 100 },      // 毫米 0-100
+        { max: 100, step: 1, label: '厘米 (cm)', maxVal: 100 },      // 厘米 0-100
+        { max: 50,  step: 1, label: '分米 (dm)', maxVal: 50 },       // 分米 0-50
+        { max: 20,  step: 1, label: '米 (m)',    maxVal: 20 },       // 米 0-20
+        { max: 10,  step: 1, label: '千米 (km)', maxVal: 10 },       // 千米 0-10
+    ];
+
+    function syncRulerToUnit(idx) {
+        const cfg = RULER_CFG[idx];
+        rulerSlider.max = cfg.max;
+        rulerSlider.step = cfg.step;
+        rulerSlider.value = 1;
+        sliderMin.textContent = '0';
+        sliderMax.textContent = cfg.max;
+        rulerUnitLabel.textContent = cfg.label;
+        drawRuler();
+    }
+
+    function drawRuler() {
+        const dpr = window.devicePixelRatio || 1;
+        const W = 520, H = 120;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        canvas.style.width = W + 'px';
+        canvas.style.height = H + 'px';
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+
+        const val = +rulerSlider.value;
+        const u = UNITS[activeUnitIdx];
+
+        // 计算要显示的刻度
+        const maxVal = +rulerSlider.max;
+        const pxPerUnit = (W - 40) / maxVal;
+
+        // 画填充条
+        const barH = 30, barY = 40;
+        ctx.fillStyle = '#eee';
+        ctx.beginPath();
+        ctx.roundRect(20, barY, W - 40, barH, 6);
+        ctx.fill();
+
+        // 填充已选部分
+        const fillW = val * pxPerUnit;
+        ctx.fillStyle = u.color + 'CC';
+        ctx.beginPath();
+        ctx.roundRect(20, barY, Math.max(fillW, 2), barH, 6);
+        ctx.fill();
+
+        // 画刻度
+        ctx.strokeStyle = '#aaa';
+        ctx.fillStyle = '#666';
+        ctx.font = '11px Microsoft YaHei, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.lineWidth = 1;
+
+        // 智能刻度间距
+        let tickStep = 1;
+        if (pxPerUnit < 8) tickStep = 10;
+        if (pxPerUnit < 4) tickStep = 20;
+        if (pxPerUnit < 2) tickStep = 50;
+
+        for (let i = 0; i <= maxVal; i += tickStep) {
+            const x = 20 + i * pxPerUnit;
+            const big = i % (tickStep * 5) === 0 || i === 0;
+            ctx.beginPath();
+            ctx.moveTo(x, barY + barH);
+            ctx.lineTo(x, barY + barH + (big ? 16 : 10));
+            ctx.strokeStyle = big ? '#666' : '#bbb';
+            ctx.lineWidth = big ? 1.5 : 0.8;
+            ctx.stroke();
+            if (big || pxPerUnit >= 20) {
+                ctx.fillStyle = '#555';
+                ctx.fillText(i, x, barY + barH + 28);
+            }
+        }
+
+        // 画当前值标记
+        const markerX = 20 + val * pxPerUnit;
+        ctx.fillStyle = u.color;
+        ctx.beginPath();
+        ctx.moveTo(markerX, barY - 4);
+        ctx.lineTo(markerX - 6, barY - 14);
+        ctx.lineTo(markerX + 6, barY - 14);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = u.color;
+        ctx.font = 'bold 13px Consolas, monospace';
+        ctx.fillText(val + ' ' + u.abbr, markerX, barY - 18);
+
+        // 更新显示
+        rulerValue.textContent = val;
+        updateEquiv(val, activeUnitIdx);
+    }
+
+    function updateEquiv(val, idx) {
+        // 转换为毫米
+        const mm = val * UNITS[idx].toMM;
+        let parts = [];
+        // 依次显示所有非零换算
+        for (let i = 0; i < UNITS.length; i++) {
+            if (i === idx) continue;
+            const converted = mm / UNITS[i].toMM;
+            // 避免太长的小数
+            let display;
+            if (converted >= 1) {
+                display = Number.isInteger(converted) ? converted : converted.toLocaleString('zh-CN', {maximumFractionDigits: 6});
+            } else {
+                display = converted.toLocaleString('zh-CN', {maximumFractionDigits: 6});
+            }
+            parts.push(`${display} ${UNITS[i].name}(${UNITS[i].abbr})`);
+        }
+        rulerEquiv.innerHTML = `<b>${val} ${UNITS[idx].name}</b> = ` + parts.join(' = <br>');
+    }
+
+    rulerSlider.addEventListener('input', drawRuler);
+    syncRulerToUnit(activeUnitIdx);
+
+    /* ===== 模式切换 ===== */
+    document.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const m = btn.dataset.mode;
+            document.getElementById('learnPanel').classList.toggle('hidden', m !== 'learn');
+            document.getElementById('quizPanel').classList.toggle('active', m === 'quiz');
+            if (m === 'quiz') newQuiz();
+        });
+    });
+
+    /* ===== 换算练习 ===== */
+    let correctCount = 0, wrongCount = 0;
+    let quizAnswer = null;
+
+    // 换算题目生成
+    const QUIZ_PAIRS = [
+        { from: 1, to: 0, label: '厘米 → 毫米' },   // cm -> mm
+        { from: 0, to: 1, label: '毫米 → 厘米' },   // mm -> cm
+        { from: 2, to: 1, label: '分米 → 厘米' },   // dm -> cm
+        { from: 1, to: 2, label: '厘米 → 分米' },   // cm -> dm
+        { from: 3, to: 2, label: '米 → 分米' },     // m -> dm
+        { from: 2, to: 3, label: '分米 → 米' },     // dm -> m
+        { from: 3, to: 1, label: '米 → 厘米' },     // m -> cm
+        { from: 1, to: 3, label: '厘米 → 米' },     // cm -> m
+        { from: 4, to: 3, label: '千米 → 米' },     // km -> m
+        { from: 3, to: 4, label: '米 → 千米' },     // m -> km
+    ];
+
+    function generateQuiz() {
+        const pair = QUIZ_PAIRS[Math.floor(Math.random() * QUIZ_PAIRS.length)];
+        const fromU = UNITS[pair.from];
+        const toU = UNITS[pair.to];
+
+        // 生成合理的数值
+        let val;
+        const ratio = fromU.toMM / toU.toMM;
+        if (ratio >= 1) {
+            // 大单位 → 小单位，结果为整数
+            val = Math.floor(Math.random() * 20) + 1;
+        } else {
+            // 小单位 → 大单位，确保结果整洁
+            const factor = toU.toMM / fromU.toMM;
+            const multiplier = Math.floor(Math.random() * 10) + 1;
+            val = multiplier * factor;
+        }
+
+        const answer = val * ratio;
+
+        return { val, answer, fromU, toU };
+    }
+
+    function newQuiz() {
+        const q = generateQuiz();
+        quizAnswer = q.answer;
+
+        document.getElementById('qVal').textContent = q.val;
+        document.getElementById('qFromUnit').textContent = q.fromU.name;
+        document.getElementById('qAns').textContent = '?';
+        document.getElementById('qToUnit').textContent = q.toU.name;
+        document.getElementById('quizInputUnit').textContent = q.toU.name;
+        document.getElementById('quizInput').value = '';
+        document.getElementById('quizInput').focus();
+
+        const el = document.getElementById('quizResult');
+        el.className = 'quiz-result';
+        el.style.display = 'none';
+    }
+
+    function checkQuiz() {
+        if (quizAnswer === null) return;
+        const input = document.getElementById('quizInput');
+        const userVal = parseFloat(input.value);
+        const el = document.getElementById('quizResult');
+
+        if (isNaN(userVal) || input.value.trim() === '') {
+            el.className = 'quiz-result wrong';
+            el.style.display = 'block';
+            el.textContent = '请输入一个数字哦 🤔';
+            return;
+        }
+
+        // 允许小数误差
+        const ok = Math.abs(userVal - quizAnswer) < 0.0001;
+        el.style.display = 'block';
+
+        if (ok) {
+            correctCount++;
+            el.className = 'quiz-result correct';
+            const msgs = ['太棒了！🎉', '完全正确！🌟', '真聪明！👏', '答对了！😊'];
+            el.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+            document.getElementById('scoreCorrect').textContent = correctCount;
+            setTimeout(newQuiz, 1500);
+        } else {
+            wrongCount++;
+            el.className = 'quiz-result wrong';
+            el.innerHTML = '再想想哦 🤔<br>正确答案是 <b>' + quizAnswer + '</b>';
+            document.getElementById('scoreWrong').textContent = wrongCount;
+        }
+    }
+
+    document.getElementById('btnCheck').addEventListener('click', checkQuiz);
+    document.getElementById('btnSkip').addEventListener('click', newQuiz);
+    document.getElementById('quizInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') checkQuiz();
+    });
+
+    /* ===== roundRect polyfill ===== */
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+            if (typeof r === 'number') r = [r, r, r, r];
+            this.moveTo(x + r[0], y);
+            this.arcTo(x + w, y, x + w, y + h, r[1]);
+            this.arcTo(x + w, y + h, x, y + h, r[2]);
+            this.arcTo(x, y + h, x, y, r[3]);
+            this.arcTo(x, y, x + w, y, r[0]);
+        };
+    }
+
+    /* ===== 初始化 ===== */
+    drawRuler();
+})();
+</script>
+</body>
+</html>

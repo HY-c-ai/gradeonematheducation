@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>认时钟 - 教学资源平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .back-btn {
+            align-self: flex-start;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-btn:hover { opacity: 1; }
+
+        h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin: 5px 0 12px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .clock-wrapper {
+            background: #fff;
+            border-radius: 50%;
+            padding: 12px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+        }
+        #clockSvg { width: 100%; height: 100%; display: block; touch-action: none; }
+
+        .time-display {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 14px 30px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .time-label { font-size: 0.9rem; color: #888; margin-bottom: 4px; }
+        .time-value { font-size: 2.4rem; font-weight: bold; font-family: 'Consolas', monospace; color: #333; }
+        .time-desc { font-size: 1rem; color: #666; margin-top: 5px; }
+        .time-desc .h-text { color: #FF7043; font-weight: bold; }
+        .time-desc .m-text { color: #42A5F5; font-weight: bold; }
+
+        .controls {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .mode-tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+            background: #e8eaf6; color: #666; font-family: inherit;
+        }
+        .mode-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            padding: 10px 16px; border: none; border-radius: 10px;
+            font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; flex: 1; min-width: 100px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-success { background: linear-gradient(135deg, #43A047, #66BB6A); color: #fff; }
+        .btn-success:hover { box-shadow: 0 4px 15px rgba(67,160,71,0.4); }
+        .btn-secondary { background: #e8eaf6; color: #555; }
+        .btn-secondary:hover { background: #c5cae9; }
+
+        .quiz-panel { display: none; }
+        .quiz-panel.active { display: block; }
+        .quiz-question {
+            text-align: center; font-size: 1.15rem; color: #333;
+            margin-bottom: 12px; padding: 12px; background: #f5f5f5; border-radius: 10px;
+        }
+        .quiz-question .q-time { color: #667eea; font-weight: bold; font-size: 1.5rem; }
+        .quiz-result {
+            text-align: center; font-size: 1.1rem; padding: 12px;
+            border-radius: 10px; margin-top: 10px; display: none; line-height: 1.7;
+        }
+        .quiz-result.correct { background: #E8F5E9; color: #2E7D32; display: block; }
+        .quiz-result.wrong { background: #FFEBEE; color: #C62828; display: block; }
+
+        .free-panel { display: block; }
+        .free-panel.hidden { display: none; }
+
+        .legend {
+            display: flex; justify-content: center; gap: 20px;
+            font-size: 0.9rem; color: #666; margin-top: 6px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .legend-dot { width: 14px; height: 14px; border-radius: 50%; }
+
+        .tip {
+            text-align: center; color: #999; font-size: 0.85rem;
+            background: rgba(255,255,255,0.7); border-radius: 10px;
+            padding: 10px; max-width: 400px; width: 100%;
+        }
+
+        @media (max-width: 420px) {
+            h1 { font-size: 1.5rem; }
+            .time-value { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">← 返回首页</a>
+    <h1>🕐 认时钟</h1>
+
+    <div class="main-container">
+        <div class="clock-wrapper">
+            <svg id="clockSvg" viewBox="0 0 400 400"></svg>
+        </div>
+
+        <div class="time-display">
+            <div class="time-label">当前显示时间</div>
+            <div class="time-value" id="timeValue">12:00</div>
+            <div class="time-desc" id="timeDesc">
+                <span class="h-text">12</span> 时
+                <span class="m-text">0</span> 分
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:#FF7043"></div>时针（短粗）</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#42A5F5"></div>分针（长细）</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="free">🎮 自由模式</button>
+                <button class="mode-tab" data-mode="quiz">📝 挑战模式</button>
+            </div>
+
+            <div id="freePanel" class="free-panel">
+                <div class="btn-row">
+                    <button class="btn btn-primary" id="btnSync">⏰ 同步真实时间</button>
+                    <button class="btn btn-secondary" id="btnRandom">🎲 随机时间</button>
+                </div>
+            </div>
+
+            <div id="quizPanel" class="quiz-panel">
+                <div class="quiz-question" id="quizQuestion">
+                    请把时钟拨到 <span class="q-time" id="quizTarget">3:00</span>
+                </div>
+                <div class="btn-row">
+                    <button class="btn btn-success" id="btnCheck">✅ 检查答案</button>
+                    <button class="btn btn-secondary" id="btnSkip">⏭ 换一题</button>
+                </div>
+                <div class="quiz-result" id="quizResult"></div>
+            </div>
+        </div>
+
+        <div class="tip">💡 拖动指针学习读时间，拖动中心圆可同时移动两根指针</div>
+    </div>
+
+<script>
+(function() {
+    /* ===== 状态 ===== */
+    let totalMin = 720;          // 总分钟数 0-1439
+    let dragging  = null;        // 'hour' | 'minute' | 'center' | null
+    let lastAngle = 0;
+    let mode      = 'free';
+    let quizAns   = null;
+
+    const DIFF = {
+        easy:   [0, 30],
+        medium: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55],
+        hard:   'all'
+    };
+
+    /* ===== DOM ===== */
+    const svg        = document.getElementById('clockSvg');
+    const elTimeVal  = document.getElementById('timeValue');
+    const elTimeDesc = document.getElementById('timeDesc');
+    const elQuizQ    = document.getElementById('quizTarget');
+    const elQuizR    = document.getElementById('quizResult');
+    const NS = 'http://www.w3.org/2000/svg';
+
+    /* ===== 工具函数 ===== */
+    function mkEl(tag, a) {
+        const e = document.createElementNS(NS, tag);
+        for (const k in a) e.setAttribute(k, a[k]);
+        return e;
+    }
+    function rad(deg) { return deg * Math.PI / 180; }
+    function ang2min(a) { return (((a % 360) + 360) % 360) / 6; }
+    function min2ang(m) { return (m % 60) * 6; }
+    function hourAng(h, m) { return ((h % 12) + m / 60) * 30; }
+    function getCurHour() { return Math.floor(totalMin / 60) % 12; }
+
+    function ptAngle(cx, cy, px, py) {
+        const r = svg.getBoundingClientRect();
+        const sx = (px - r.left) / r.width  * 400;
+        const sy = (py - r.top)  / r.height * 400;
+        return (Math.atan2(sx - cx, cy - sy) * 180 / Math.PI + 360) % 360;
+    }
+
+    /* ===== 绘制 ===== */
+    function draw() {
+        svg.innerHTML = '';
+        const m = totalMin % 60;
+        const h = getCurHour();
+        const mA = min2ang(m);
+        const hA = hourAng(h, m);
+
+        // 表盘阴影
+        const defs = mkEl('defs', {});
+        defs.innerHTML = '<filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.15"/></filter>';
+        svg.appendChild(defs);
+
+        // 外圈
+        svg.appendChild(mkEl('circle', {cx:200,cy:200,r:192,fill:'#FAFAFA',stroke:'#E0E0E0','stroke-width':3,filter:'url(#ds)'}));
+        svg.appendChild(mkEl('circle', {cx:200,cy:200,r:175,fill:'none',stroke:'#EEEEEE','stroke-width':1}));
+
+        // 刻度 + 数字
+        for (let i = 0; i < 60; i++) {
+            const a = rad(i * 6);
+            const big = i % 5 === 0;
+            const r1 = big ? 155 : 167, r2 = 175, sw = big ? 3 : 1;
+            svg.appendChild(mkEl('line', {
+                x1: 200 + r1*Math.sin(a), y1: 200 - r1*Math.cos(a),
+                x2: 200 + r2*Math.sin(a), y2: 200 - r2*Math.cos(a),
+                stroke: big ? '#555' : '#CCC', 'stroke-width': sw, 'stroke-linecap': 'round'
+            }));
+            if (big) {
+                const num = i / 5 || 12;
+                const nr = 138;
+                const t = mkEl('text', {
+                    x: 200 + nr*Math.sin(a), y: 200 - nr*Math.cos(a),
+                    'text-anchor':'middle', 'dominant-baseline':'central',
+                    'font-size': 26, 'font-weight': 'bold',
+                    fill: num === h || (h === 0 && num === 12) ? '#FF7043' : '#444',
+                    'font-family': 'Arial, sans-serif'
+                });
+                t.textContent = num;
+                svg.appendChild(t);
+            }
+        }
+
+        // 时针
+        const hg = mkEl('g', {transform:`rotate(${hA},200,200)`});
+        hg.appendChild(mkEl('line', {x1:200,y1:212,x2:200,y2:105,stroke:'#FF7043','stroke-width':10,'stroke-linecap':'round'}));
+        hg.appendChild(mkEl('circle', {cx:200,cy:105,r:9,fill:'#FF7043',cursor:'grab',class:'ht'}));
+        svg.appendChild(hg);
+
+        // 分针
+        const mg = mkEl('g', {transform:`rotate(${mA},200,200)`});
+        mg.appendChild(mkEl('line', {x1:200,y1:218,x2:200,y2:52,stroke:'#42A5F5','stroke-width':6,'stroke-linecap':'round'}));
+        mg.appendChild(mkEl('circle', {cx:200,cy:52,r:7,fill:'#42A5F5',cursor:'grab',class:'mt'}));
+        svg.appendChild(mg);
+
+        // 中心
+        svg.appendChild(mkEl('circle', {cx:200,cy:200,r:16,fill:'#455A64',cursor:'grab'}));
+        svg.appendChild(mkEl('circle', {cx:200,cy:200,r:6,fill:'#fff'}));
+    }
+
+    /* ===== 拖动 ===== */
+    function evtXY(e) {
+        if (e.touches && e.touches.length) return [e.touches[0].clientX, e.touches[0].clientY];
+        return [e.clientX, e.clientY];
+    }
+
+    function onStart(type, e) {
+        e.preventDefault();
+        const [px, py] = evtXY(e);
+        lastAngle = ptAngle(200, 200, px, py);
+        dragging = type;
+        document.body.style.cursor = 'grabbing';
+    }
+
+    function onMove(e) {
+        if (!dragging) return;
+        e.preventDefault();
+        const [px, py] = evtXY(e);
+        const a = ptAngle(200, 200, px, py);
+        let d = a - lastAngle;
+        if (d >  180) d -= 360;
+        if (d < -180) d += 360;
+
+        if (dragging === 'minute') {
+            totalMin = ((totalMin + Math.round(d)) % 1440 + 1440) % 1440;
+        } else if (dragging === 'hour') {
+            const dm = Math.round(d * 12);
+            totalMin = ((totalMin + dm) % 1440 + 1440) % 1440;
+        } else if (dragging === 'center') {
+            const dm = Math.round(d * 12);
+            totalMin = ((totalMin + dm) % 1440 + 1440) % 1440;
+        }
+        lastAngle = a;
+        render();
+    }
+
+    function onEnd() {
+        if (!dragging) return;
+        dragging = null;
+        document.body.style.cursor = '';
+        if (mode !== 'quiz') totalMin = Math.round(totalMin);
+        render();
+    }
+
+    svg.addEventListener('mousedown', e => {
+        const t = e.target;
+        if (t.classList.contains('mt')) onStart('minute', e);
+        else if (t.classList.contains('ht')) onStart('hour', e);
+        else if (t.tagName === 'circle' && +t.getAttribute('r') === 16) onStart('center', e);
+    });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+
+    svg.addEventListener('touchstart', e => {
+        const t = e.target;
+        if (t.classList.contains('mt')) onStart('minute', e);
+        else if (t.classList.contains('ht')) onStart('hour', e);
+        else if (t.tagName === 'circle' && +t.getAttribute('r') === 16) onStart('center', e);
+    }, {passive: false});
+    document.addEventListener('touchmove', onMove, {passive: false});
+    document.addEventListener('touchend', onEnd);
+
+    /* ===== 显示更新 ===== */
+    function render() {
+        draw();
+        const m = totalMin % 60;
+        const dh = getCurHour() || 12;
+        const ah = Math.floor(totalMin / 60);
+        elTimeVal.textContent = String(ah).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        elTimeDesc.innerHTML = '<span class="h-text">'+dh+'</span> 时 <span class="m-text">'+m+'</span> 分';
+    }
+
+    /* ===== 按钮事件 ===== */
+    function syncReal() {
+        const n = new Date();
+        totalMin = n.getHours() * 60 + n.getMinutes();
+        render();
+    }
+
+    function randTime() {
+        const h = Math.floor(Math.random() * 12);
+        const m = Math.floor(Math.random() * 12) * 5;
+        totalMin = h * 60 + m;
+        render();
+    }
+
+    /* ===== 测验 ===== */
+    function newQuiz() {
+        const d = DIFF[document.getElementById('diffSel')?.value || 'easy'];
+        const h = Math.floor(Math.random() * 12) || 12;
+        let m;
+        if (d === 'all') m = Math.floor(Math.random() * 60);
+        else m = d[Math.floor(Math.random() * d.length)];
+        quizAns = { h: h % 12, m };
+        elQuizQ.textContent = h + ':' + String(m).padStart(2,'0');
+        elQuizR.className = 'quiz-result';
+        elQuizR.style.display = 'none';
+    }
+
+    function checkAns() {
+        if (!quizAns) return;
+        const cm = totalMin % 60;
+        const ch = getCurHour();
+        const ok = ch === quizAns.h && cm === quizAns.m;
+        elQuizR.style.display = 'block';
+        if (ok) {
+            elQuizR.className = 'quiz-result correct';
+            const msgs = ['太棒了！🎉','完全正确！🌟','真聪明！👏','答对了！😊'];
+            elQuizR.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+            setTimeout(newQuiz, 1800);
+        } else {
+            elQuizR.className = 'quiz-result wrong';
+            const ca = (quizAns.h||12)+':'+String(quizAns.m).padStart(2,'0');
+            const ua = (ch||12)+':'+String(cm).padStart(2,'0');
+            elQuizR.innerHTML = '再想想哦 🤔<br>你拨的是 <b>'+ua+'</b>，正确答案是 <b>'+ca+'</b>';
+        }
+    }
+
+    /* ===== 模式切换 ===== */
+    document.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            mode = btn.dataset.mode;
+            document.getElementById('freePanel').classList.toggle('hidden', mode !== 'free');
+            document.getElementById('quizPanel').classList.toggle('active', mode === 'quiz');
+            if (mode === 'quiz') newQuiz();
+        });
+    });
+
+    document.getElementById('btnSync').addEventListener('click', syncReal);
+    document.getElementById('btnRandom').addEventListener('click', randTime);
+    document.getElementById('btnCheck').addEventListener('click', checkAns);
+    document.getElementById('btnSkip').addEventListener('click', newQuiz);
+
+    /* ===== 初始化 ===== */
+    render();
+})();
+</script>
+</body>
+</html>

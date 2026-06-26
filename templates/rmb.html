@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>认识人民币 - 教学资源平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .back-btn {
+            align-self: flex-start;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.1rem;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .back-btn:hover { opacity: 1; }
+
+        h1 {
+            color: #fff;
+            font-size: 2rem;
+            margin: 5px 0 12px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            width: 100%;
+        }
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #4a4a4a;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ===== 换算关系 ===== */
+        .relation-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .relation-item {
+            background: #f5f5f5;
+            border-radius: 12px;
+            padding: 14px 8px;
+            text-align: center;
+            transition: background 0.2s;
+        }
+        .relation-item:hover { background: #eef; }
+        .relation-item .r-big {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .relation-item .r-sub { font-size: 0.85rem; color: #888; }
+
+        /* ===== 认识面额 ===== */
+        .denom-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+        .denom-tab {
+            flex: 1; padding: 8px; border: none; border-radius: 10px;
+            font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+            background: #e8eaf6; color: #666; font-family: inherit;
+        }
+        .denom-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+        .denom-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+        .denom-card {
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        .denom-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+        .denom-card:active { transform: scale(0.96); }
+        .denom-card .d-icon { font-size: 2.2rem; display: block; margin-bottom: 6px; }
+        .denom-card .d-value { font-size: 1.1rem; font-weight: bold; }
+        .denom-card .d-type { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .denom-card.coin { background: linear-gradient(135deg, #FFF8E1, #FFE082); }
+        .denom-card.bill { background: linear-gradient(135deg, #E8F5E9, #A5D6A7); }
+
+        /* ===== 模拟付款 ===== */
+        .pay-display {
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, #f5f5f5, #e8eaf6);
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+        .pay-total {
+            font-size: 2.6rem;
+            font-weight: bold;
+            color: #E53935;
+            font-family: 'Consolas', monospace;
+        }
+        .pay-total .yuan-sign { font-size: 1.4rem; color: #888; margin-right: 2px; }
+        .pay-breakdown {
+            font-size: 1rem;
+            color: #555;
+            margin-top: 6px;
+        }
+        .pay-breakdown b { color: #667eea; }
+
+        .pay-tray {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 50px;
+            padding: 10px;
+            background: #fafafa;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+        .pay-tray:empty::after {
+            content: '👆 点击上面的钱币放入托盘';
+            color: #bbb;
+            font-size: 0.9rem;
+        }
+        .tray-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tray-item:hover { background: #ffebee; border-color: #ef9a9a; }
+        .tray-item .ti-icon { font-size: 1.1rem; }
+
+        .pay-btn-row { display: flex; gap: 8px; }
+
+        /* ===== 模式标签 ===== */
+        .mode-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+        .mode-tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            font-size: 1rem; cursor: pointer; transition: all 0.2s;
+            background: #e8eaf6; color: #666; font-family: inherit;
+        }
+        .mode-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* ===== 购物挑战 ===== */
+        .shop-item {
+            text-align: center;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 14px;
+            margin-bottom: 14px;
+        }
+        .shop-item .s-icon { font-size: 3rem; display: block; margin-bottom: 6px; }
+        .shop-item .s-name { font-size: 1.1rem; color: #333; margin-bottom: 4px; }
+        .shop-item .s-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #E53935;
+            font-family: 'Consolas', monospace;
+        }
+        .shop-item .s-price .yuan-sign { font-size: 1.1rem; color: #888; }
+        .shop-hint { font-size: 0.9rem; color: #888; margin-top: 6px; }
+
+        .shop-tray {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            min-height: 50px;
+            padding: 10px;
+            background: #fafafa;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+        .shop-tray:empty::after {
+            content: '👆 选出正确的钱币来付款';
+            color: #bbb;
+            font-size: 0.9rem;
+        }
+
+        .shop-score {
+            display: flex; justify-content: center; gap: 20px;
+            margin-bottom: 10px; font-size: 0.95rem; color: #666;
+        }
+        .shop-score span { font-weight: bold; }
+        .sc-ok { color: #43A047; }
+        .sc-no { color: #E53935; }
+
+        .shop-choices {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .choice-btn {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 10px 6px;
+            text-align: center;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        .choice-btn:hover { border-color: #667eea; background: #f0f1ff; }
+        .choice-btn:active { transform: scale(0.95); }
+        .choice-btn .cb-icon { font-size: 1.5rem; display: block; margin-bottom: 3px; }
+        .choice-btn .cb-val { font-weight: bold; color: #333; }
+        .choice-btn.used { opacity: 0.3; pointer-events: none; }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn {
+            padding: 10px 16px; border: none; border-radius: 10px;
+            font-size: 0.95rem; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; flex: 1; min-width: 100px;
+        }
+        .btn:active { transform: scale(0.97); }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-success { background: linear-gradient(135deg, #43A047, #66BB6A); color: #fff; }
+        .btn-success:hover { box-shadow: 0 4px 15px rgba(67,160,71,0.4); }
+        .btn-secondary { background: #e8eaf6; color: #555; }
+        .btn-secondary:hover { background: #c5cae9; }
+        .btn-warn { background: linear-gradient(135deg, #FF7043, #EF5350); color: #fff; }
+
+        .quiz-result {
+            text-align: center; font-size: 1.05rem; padding: 12px;
+            border-radius: 10px; margin-top: 10px; display: none; line-height: 1.7;
+        }
+        .quiz-result.correct { background: #E8F5E9; color: #2E7D32; display: block; }
+        .quiz-result.wrong { background: #FFEBEE; color: #C62828; display: block; }
+
+        .tip {
+            text-align: center; color: #999; font-size: 0.85rem;
+            background: rgba(255,255,255,0.7); border-radius: 10px;
+            padding: 10px; max-width: 600px; width: 100%;
+        }
+
+        @media (max-width: 420px) {
+            h1 { font-size: 1.5rem; }
+            .pay-total { font-size: 2rem; }
+            .relation-grid { grid-template-columns: 1fr; }
+            .denom-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-btn">← 返回首页</a>
+    <h1>💰 认识人民币</h1>
+
+    <div class="main-container">
+        <!-- 换算关系 -->
+        <div class="card">
+            <div class="card-title">🔗 单位换算关系</div>
+            <div class="relation-grid">
+                <div class="relation-item">
+                    <span class="r-big">1元 = 10角</span>
+                    <span class="r-sub">元 → 角</span>
+                </div>
+                <div class="relation-item">
+                    <span class="r-big">1角 = 10分</span>
+                    <span class="r-sub">角 → 分</span>
+                </div>
+                <div class="relation-item">
+                    <span class="r-big">1元 = 100分</span>
+                    <span class="r-sub">元 → 分</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 认识面额 -->
+        <div class="card">
+            <div class="card-title">👀 认识面额（点击可放入下方托盘）</div>
+            <div class="denom-tabs">
+                <button class="denom-tab active" data-cat="all">全部</button>
+                <button class="denom-tab" data-cat="coin">硬币</button>
+                <button class="denom-tab" data-cat="bill">纸币</button>
+            </div>
+            <div class="denom-grid" id="denomGrid"></div>
+        </div>
+
+        <!-- 模拟付款 + 购物挑战 -->
+        <div class="card">
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="free">🎮 模拟付款</button>
+                <button class="mode-tab" data-mode="shop">🛒 购物挑战</button>
+            </div>
+
+            <!-- 自由模式 -->
+            <div id="freePanel" class="panel active">
+                <div class="pay-display">
+                    <div class="pay-total">
+                        <span id="payTotalVal">0元 0角 0分</span>
+                    </div>
+                    <div class="pay-breakdown" id="payBreakdown">
+                        <b>0</b> 元 <b>0</b> 角 <b>0</b> 分
+                    </div>
+                </div>
+                <div class="pay-tray" id="payTray"></div>
+                <div class="pay-btn-row">
+                    <button class="btn btn-warn" id="btnClearTray">🗑 清空托盘</button>
+                </div>
+            </div>
+
+            <!-- 购物模式 -->
+            <div id="shopPanel" class="panel">
+                <div class="shop-score">
+                    ✅ 正确: <span class="sc-ok" id="shopCorrect">0</span>
+                    &nbsp;&nbsp;
+                    ❌ 错误: <span class="sc-no" id="shopWrong">0</span>
+                </div>
+                <div class="shop-item" id="shopItem">
+                    <span class="s-icon" id="shopIcon">🍎</span>
+                    <div class="s-name" id="shopName">苹果</div>
+                    <div class="s-price">
+                        <span id="shopPrice">3元 5角</span>
+                    </div>
+                    <div class="shop-hint" id="shopHint">请选出刚好能付款的钱币组合</div>
+                </div>
+                <div class="shop-tray" id="shopTray"></div>
+                <div class="shop-choices" id="shopChoices"></div>
+                <div class="btn-row">
+                    <button class="btn btn-success" id="btnShopCheck">✅ 付款</button>
+                    <button class="btn btn-secondary" id="btnShopSkip">⏭ 换一件</button>
+                </div>
+                <div class="quiz-result" id="shopResult"></div>
+            </div>
+        </div>
+
+        <div class="tip">💡 记住口诀：<b>1元 = 10角，1角 = 10分，1元 = 100分</b></div>
+    </div>
+
+<script>
+(function() {
+    /* ===== 面额数据 ===== */
+    // value 以"分"为单位
+    const DENOMS = [
+        { name: '1分',   value: 1,     cat: 'coin', icon: '🪙', bg: '#FFF8E1' },
+        { name: '2分',   value: 2,     cat: 'coin', icon: '🪙', bg: '#FFF8E1' },
+        { name: '5分',   value: 5,     cat: 'coin', icon: '🪙', bg: '#FFF8E1' },
+        { name: '1角',   value: 10,    cat: 'coin', icon: '🪙', bg: '#FFF3E0' },
+        { name: '5角',   value: 50,    cat: 'coin', icon: '🪙', bg: '#FFF3E0' },
+        { name: '1元',   value: 100,   cat: 'coin', icon: '🪙', bg: '#E8F5E9' },
+        { name: '1角',   value: 10,    cat: 'bill', icon: '💴', bg: '#E3F2FD' },
+        { name: '5角',   value: 50,    cat: 'bill', icon: '💴', bg: '#E3F2FD' },
+        { name: '1元',   value: 100,   cat: 'bill', icon: '💴', bg: '#E8F5E9' },
+        { name: '5元',   value: 500,   cat: 'bill', icon: '💵', bg: '#FCE4EC' },
+        { name: '10元',  value: 1000,  cat: 'bill', icon: '💵', bg: '#F3E5F5' },
+        { name: '20元',  value: 2000,  cat: 'bill', icon: '💵', bg: '#E8EAF6' },
+        { name: '50元',  value: 5000,  cat: 'bill', icon: '💶', bg: '#E0F2F1' },
+        { name: '100元', value: 10000, cat: 'bill', icon: '💶', bg: '#FFEBEE' },
+    ];
+
+    let currentCat = 'all';
+
+    /* ===== 分 → 元角分 ===== */
+    function fenToYJF(fen) {
+        const y = Math.floor(fen / 100);
+        const j = Math.floor((fen % 100) / 10);
+        const f = fen % 10;
+        return { y, j, f };
+    }
+    function fenToText(fen) {
+        const y = Math.floor(fen / 100);
+        const j = Math.floor((fen % 100) / 10);
+        const f = fen % 10;
+        let parts = [];
+        if (y > 0) parts.push(y + '元');
+        if (j > 0) parts.push(j + '角');
+        if (f > 0) parts.push(f + '分');
+        return parts.length > 0 ? parts.join(' ') : '0分';
+    }
+
+    /* ===== 渲染面额卡片 ===== */
+    const denomGrid = document.getElementById('denomGrid');
+    function renderDenoms() {
+        denomGrid.innerHTML = '';
+        DENOMS.forEach((d, i) => {
+            if (currentCat !== 'all' && d.cat !== currentCat) return;
+            const div = document.createElement('div');
+            div.className = 'denom-card ' + d.cat;
+            div.innerHTML = `
+                <span class="d-icon">${d.icon}</span>
+                <div class="d-value">${d.name}</div>
+                <div class="d-type">${d.cat === 'coin' ? '硬币' : '纸币'}</div>
+            `;
+            div.addEventListener('click', () => addToTray(i));
+            denomGrid.appendChild(div);
+        });
+    }
+    renderDenoms();
+
+    document.querySelectorAll('.denom-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.denom-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentCat = btn.dataset.cat;
+            renderDenoms();
+        });
+    });
+
+    /* ===== 模拟付款托盘 ===== */
+    let trayItems = []; // [{denomIdx, ...}]
+    const payTray = document.getElementById('payTray');
+    const payTotalVal = document.getElementById('payTotalVal');
+    const payBreakdown = document.getElementById('payBreakdown');
+
+    function addToTray(denomIdx) {
+        if (currentMode === 'shop') {
+            addShopChoice(denomIdx);
+            return;
+        }
+        trayItems.push(denomIdx);
+        renderTray();
+    }
+
+    function removeFromTray(pos) {
+        trayItems.splice(pos, 1);
+        renderTray();
+    }
+
+    function renderTray() {
+        payTray.innerHTML = '';
+        let totalFen = 0;
+        trayItems.forEach((di, pos) => {
+            const d = DENOMS[di];
+            totalFen += d.value;
+            const span = document.createElement('span');
+            span.className = 'tray-item';
+            span.innerHTML = `<span class="ti-icon">${d.icon}</span>${d.name}`;
+            span.title = '点击移除';
+            span.addEventListener('click', () => removeFromTray(pos));
+            payTray.appendChild(span);
+        });
+        payTotalVal.textContent = fenToText(totalFen);
+        const { y, j, f } = fenToYJF(totalFen);
+        payBreakdown.innerHTML = `<b>${y}</b> 元 <b>${j}</b> 角 <b>${f}</b> 分`;
+    }
+
+    document.getElementById('btnClearTray').addEventListener('click', () => {
+        trayItems = [];
+        renderTray();
+    });
+
+    /* ===== 模式切换 ===== */
+    let currentMode = 'free';
+    document.querySelectorAll('.mode-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentMode = btn.dataset.mode;
+            document.getElementById('freePanel').classList.toggle('active', currentMode === 'free');
+            document.getElementById('shopPanel').classList.toggle('active', currentMode === 'shop');
+            if (currentMode === 'shop') newShopItem();
+        });
+    });
+
+    /* ===== 购物挑战 ===== */
+    const SHOP_ITEMS = [
+        { icon: '🍎', name: '苹果' },
+        { icon: '🍌', name: '香蕉' },
+        { icon: '🥛', name: '牛奶' },
+        { icon: '🍞', name: '面包' },
+        { icon: '📓', name: '笔记本' },
+        { icon: '✏️', name: '铅笔' },
+        { icon: '🧃', name: '果汁' },
+        { icon: '🍪', name: '饼干' },
+        { icon: '🎈', name: '气球' },
+        { icon: '🧸', name: '玩偶' },
+        { icon: '📚', name: '故事书' },
+        { icon: '🖍️', name: '蜡笔' },
+        { icon: '🍦', name: '冰淇淋' },
+        { icon: '🎒', name: '书包' },
+        { icon: '⚽', name: '足球' },
+    ];
+
+    let shopTarget = 0;     // 目标金额（分）
+    let shopTrayItems = [];  // 已选面额索引
+    let shopUsedChoices = new Set();
+    let shopCorrect = 0, shopWrong = 0;
+    let shopChoicePool = []; // 当前可选项
+
+    function genPrice() {
+        // 生成 1角 ~ 50元 之间的价格，以角为单位整数
+        const jiao = Math.floor(Math.random() * 500) + 1; // 1~500 角
+        return jiao * 10; // 转分
+    }
+
+    function genChoicePool(targetFen) {
+        // 生成一组可选面额，确保能刚好凑出目标金额
+        const pool = [];
+        const used = new Set();
+
+        // 先放正确组合
+        let remaining = targetFen;
+        // 贪心分解
+        const sortedDenoms = DENOMS.map((d, i) => ({ ...d, idx: i }))
+            .filter(d => d.value <= targetFen)
+            .sort((a, b) => b.value - a.value);
+
+        for (const d of sortedDenoms) {
+            while (remaining >= d.value) {
+                pool.push(d.idx);
+                remaining -= d.value;
+                if (pool.length > 12) break;
+            }
+            if (remaining === 0 || pool.length > 12) break;
+        }
+
+        // 如果贪心未能凑完，换一种策略：只用小面额
+        if (remaining > 0) {
+            pool.length = 0;
+            remaining = targetFen;
+            const smallDenoms = DENOMS.map((d, i) => ({ ...d, idx: i }))
+                .filter(d => d.value <= 100)
+                .sort((a, b) => b.value - a.value);
+            for (const d of smallDenoms) {
+                while (remaining >= d.value && pool.length < 12) {
+                    pool.push(d.idx);
+                    remaining -= d.value;
+                }
+                if (remaining === 0) break;
+            }
+        }
+
+        // 添加一些干扰项
+        const distractors = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+        for (let i = 0; i < 4; i++) {
+            const di = distractors[Math.floor(Math.random() * distractors.length)];
+            pool.push(di);
+        }
+
+        // 打乱
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+
+        return pool;
+    }
+
+    function newShopItem() {
+        const item = SHOP_ITEMS[Math.floor(Math.random() * SHOP_ITEMS.length)];
+        shopTarget = genPrice();
+        shopTrayItems = [];
+        shopUsedChoices = new Set();
+
+        document.getElementById('shopIcon').textContent = item.icon;
+        document.getElementById('shopName').textContent = item.name;
+        document.getElementById('shopPrice').textContent = fenToText(shopTarget);
+        document.getElementById('shopHint').textContent = '请选出刚好能付款的钱币组合';
+
+        shopChoicePool = genChoicePool(shopTarget);
+        renderShopChoices();
+        renderShopTray();
+
+        const el = document.getElementById('shopResult');
+        el.className = 'quiz-result';
+        el.style.display = 'none';
+    }
+
+    function renderShopChoices() {
+        const container = document.getElementById('shopChoices');
+        container.innerHTML = '';
+        shopChoicePool.forEach((di, pos) => {
+            const d = DENOMS[di];
+            const btn = document.createElement('button');
+            btn.className = 'choice-btn' + (shopUsedChoices.has(pos) ? ' used' : '');
+            btn.innerHTML = `<span class="cb-icon">${d.icon}</span><span class="cb-val">${d.name}</span>`;
+            btn.addEventListener('click', () => addShopChoiceByPos(pos));
+            container.appendChild(btn);
+        });
+    }
+
+    function addShopChoiceByPos(pos) {
+        if (shopUsedChoices.has(pos)) return;
+        shopUsedChoices.add(pos);
+        shopTrayItems.push(shopChoicePool[pos]);
+        renderShopChoices();
+        renderShopTray();
+    }
+
+    function addShopChoice(denomIdx) {
+        // 在购物模式下，点击面额卡片无效，必须从选项中选择
+    }
+
+    function removeShopChoice(pos) {
+        // 点击托盘中的项移除
+        const trayDi = shopTrayItems[pos];
+        // 找到对应的 pool pos
+        let poolPos = -1;
+        let count = 0;
+        for (let i = 0; i < shopChoicePool.length; i++) {
+            if (shopUsedChoices.has(i) && shopChoicePool[i] === trayDi) {
+                if (count === pos) { poolPos = i; break; }
+                // 需要匹配第 pos 个
+            }
+        }
+        // 简单方案：重建
+        shopTrayItems.splice(pos, 1);
+        shopUsedChoices = new Set();
+        // 重新标记 used
+        const tempTray = [...shopTrayItems];
+        shopTrayItems = [];
+        shopUsedChoices = new Set();
+        tempTray.forEach(di => {
+            for (let i = 0; i < shopChoicePool.length; i++) {
+                if (!shopUsedChoices.has(i) && shopChoicePool[i] === di) {
+                    shopUsedChoices.add(i);
+                    shopTrayItems.push(di);
+                    break;
+                }
+            }
+        });
+        renderShopChoices();
+        renderShopTray();
+    }
+
+    function renderShopTray() {
+        const tray = document.getElementById('shopTray');
+        tray.innerHTML = '';
+        let totalFen = 0;
+        shopTrayItems.forEach((di, pos) => {
+            const d = DENOMS[di];
+            totalFen += d.value;
+            const span = document.createElement('span');
+            span.className = 'tray-item';
+            span.innerHTML = `<span class="ti-icon">${d.icon}</span>${d.name}`;
+            span.title = '点击移除';
+            span.addEventListener('click', () => removeShopChoice(pos));
+            tray.appendChild(span);
+        });
+    }
+
+    function checkShopPay() {
+        let totalFen = 0;
+        shopTrayItems.forEach(di => totalFen += DENOMS[di].value);
+        const el = document.getElementById('shopResult');
+        el.style.display = 'block';
+
+        if (totalFen === shopTarget) {
+            shopCorrect++;
+            document.getElementById('shopCorrect').textContent = shopCorrect;
+            el.className = 'quiz-result correct';
+            const msgs = ['付款成功！🎉', '刚好够！太棒了！🌟', '完全正确！👏', '算得真准！😊'];
+            el.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+            setTimeout(newShopItem, 1800);
+        } else {
+            shopWrong++;
+            document.getElementById('shopWrong').textContent = shopWrong;
+            el.className = 'quiz-result wrong';
+            if (totalFen < shopTarget) {
+                el.innerHTML = `还差一点 🤔<br>你付了 <b>${fenToText(totalFen)}</b>，需要 <b>${fenToText(shopTarget)}</b>，还差 <b>${fenToText(shopTarget - totalFen)}</b>`;
+            } else {
+                el.innerHTML = `多付了哦 🤔<br>你付了 <b>${fenToText(totalFen)}</b>，只需 <b>${fenToText(shopTarget)}</b>，多付了 <b>${fenToText(totalFen - shopTarget)}</b>`;
+            }
+        }
+    }
+
+    document.getElementById('btnShopCheck').addEventListener('click', checkShopPay);
+    document.getElementById('btnShopSkip').addEventListener('click', newShopItem);
+
+    /* ===== 初始化 ===== */
+    renderTray();
+})();
+</script>
+</body>
+</html>

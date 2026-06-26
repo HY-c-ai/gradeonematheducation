@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>凑十法与破十法</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px;
+        }
+
+        .top-bar {
+            width: 100%;
+            max-width: 960px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.7);
+            border: none;
+            border-radius: 50%;
+            width: 44px; height: 44px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            transition: background 0.2s;
+            text-decoration: none;
+            color: #333;
+        }
+        .back-btn:hover { background: #fff; }
+        .page-title {
+            flex: 1;
+            text-align: center;
+            font-size: 1.8rem;
+            color: #5a3e1b;
+            font-weight: bold;
+            margin-right: 44px;
+        }
+
+        /* 选项卡 */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: rgba(255,255,255,0.45);
+            border-radius: 40px;
+            padding: 5px;
+            margin-bottom: 28px;
+        }
+        .tab-btn {
+            border: none;
+            background: transparent;
+            padding: 12px 36px;
+            border-radius: 36px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #885a2a;
+            transition: all 0.25s;
+        }
+        .tab-btn.active {
+            background: #fff;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+            color: #d35400;
+        }
+        .tab-btn:not(.active):hover { background: rgba(255,255,255,0.5); }
+
+        /* 主面板 */
+        .panel {
+            display: none;
+            width: 100%;
+            max-width: 960px;
+            flex-direction: column;
+            align-items: center;
+        }
+        .panel.active { display: flex; }
+
+        /* 题目选择 */
+        .problem-selector {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px 32px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+            margin-bottom: 24px;
+        }
+        .problem-selector h3 { color: #5a3e1b; margin-bottom: 16px; font-size: 1.1rem; }
+        .problem-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .problem-btn {
+            border: 2px solid #f0c27f;
+            background: #fff8ef;
+            border-radius: 14px;
+            padding: 10px 20px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #885a2a;
+            transition: all 0.2s;
+            min-width: 90px;
+            text-align: center;
+        }
+        .problem-btn:hover { background: #fdebd0; transform: translateY(-2px); }
+        .problem-btn.active {
+            background: #e67e22;
+            color: #fff;
+            border-color: #e67e22;
+            box-shadow: 0 3px 10px rgba(230,126,34,0.45);
+        }
+
+        /* 教学演示区 */
+        .demo-area {
+            background: #fff;
+            border-radius: 20px;
+            padding: 32px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+            min-height: 340px;
+        }
+
+        .demo-header {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #d35400;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+        .demo-hint {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        /* 步骤 */
+        .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            padding: 16px 20px;
+            border-radius: 16px;
+            background: #fdfaf3;
+            border: 2px solid #f5e6cc;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.5s ease;
+        }
+        .step.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .step.highlight {
+            border-color: #e67e22;
+            background: #fff5e6;
+            box-shadow: 0 0 0 3px rgba(230,126,34,0.15);
+        }
+        .step-num {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            background: #e67e22;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .step-content { flex: 1; }
+        .step-label {
+            font-size: 0.85rem;
+            color: #b08050;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        .step-expr {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .step-expr .num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            padding: 4px 12px;
+            border-radius: 10px;
+            font-size: 1.5rem;
+        }
+        .num-blue { background: #d6eaf8; color: #1a5276; }
+        .num-orange { background: #fdebd0; color: #a04000; }
+        .num-green { background: #d5f5e3; color: #186a3b; }
+        .num-red { background: #fadbd8; color: #922b21; }
+        .num-purple { background: #ebdef0; color: #4a235a; }
+        .op { font-size: 1.4rem; color: #888; }
+        .eq { font-size: 1.4rem; color: #e67e22; font-weight: bold; }
+
+        /* 可视化珠子/方块 */
+        .visual-block {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .dot {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            transition: all 0.4s ease;
+        }
+        .dot-blue { background: #3498db; }
+        .dot-orange { background: #e67e22; }
+        .dot-green { background: #27ae60; }
+        .dot-red { background: #e74c3c; }
+        .dot-gray { background: #ccc; }
+        .dot.merged {
+            animation: pop 0.4s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+        .dot.fly-away {
+            animation: flyAway 0.5s ease forwards;
+        }
+        @keyframes flyAway {
+            to { opacity: 0; transform: translateX(40px) scale(0); }
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            justify-content: center;
+        }
+        .ctrl-btn {
+            border: none;
+            border-radius: 30px;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ctrl-btn:hover { transform: translateY(-2px); }
+        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .btn-next { background: #e67e22; color: #fff; box-shadow: 0 3px 10px rgba(230,126,34,0.4); }
+        .btn-prev { background: #eee; color: #555; }
+        .btn-reset { background: #3498db; color: #fff; box-shadow: 0 3px 10px rgba(52,152,219,0.4); }
+
+        /* 口诀提示 */
+        .tip-box {
+            margin-top: 20px;
+            background: #fef9e7;
+            border: 2px dashed #f0c27f;
+            border-radius: 14px;
+            padding: 16px 22px;
+            width: 100%;
+        }
+        .tip-box h4 { color: #b7950b; margin-bottom: 8px; font-size: 0.95rem; }
+        .tip-box p { color: #7d6608; font-size: 0.92rem; line-height: 1.7; }
+        .tip-box .rhyme {
+            display: inline-block;
+            background: #fdebd0;
+            padding: 2px 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 2px 4px;
+        }
+
+        footer {
+            margin-top: auto;
+            padding-top: 40px;
+            color: rgba(90,62,27,0.45);
+            font-size: 0.85rem;
+        }
+
+        /* 自定义输入区 */
+        .custom-input {
+            background: #fff;
+            border-radius: 20px;
+            padding: 20px 32px;
+            width: 100%;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+            margin-bottom: 24px;
+        }
+        .custom-input h3 { color: #5a3e1b; margin-bottom: 12px; font-size: 1.1rem; }
+        .custom-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .custom-row input[type="number"] {
+            width: 72px;
+            padding: 10px 12px;
+            border: 2px solid #f0c27f;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            color: #885a2a;
+            background: #fff8ef;
+            outline: none;
+            transition: border-color 0.2s;
+            -moz-appearance: textfield;
+        }
+        .custom-row input[type="number"]::-webkit-outer-spin-button,
+        .custom-row input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .custom-row input[type="number"]:focus { border-color: #e67e22; }
+        .custom-op { font-size: 1.4rem; font-weight: bold; color: #888; }
+        .custom-go {
+            border: none;
+            background: #e67e22;
+            color: #fff;
+            border-radius: 14px;
+            padding: 10px 22px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 10px rgba(230,126,34,0.4);
+        }
+        .custom-go:hover { transform: translateY(-2px); }
+        .custom-error {
+            color: #e74c3c;
+            font-size: 0.88rem;
+            margin-top: 8px;
+            min-height: 1.2em;
+        }
+
+        /* 分隔线 */
+        .divider {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            color: #b08050;
+            font-size: 0.9rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e0c9a6;
+        }
+
+        @media (max-width: 600px) {
+            .page-title { font-size: 1.3rem; }
+            .demo-header { font-size: 1.6rem; }
+            .step-expr .num { font-size: 1.2rem; min-width: 32px; padding: 3px 8px; }
+            .problem-btn { padding: 8px 14px; font-size: 1rem; min-width: 76px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <a href="/" class="back-btn" title="返回首页">←</a>
+    <div class="page-title">凑十法与破十法</div>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('make')">凑十法（加法）</button>
+    <button class="tab-btn" onclick="switchTab('break')">破十法（减法）</button>
+</div>
+
+<!-- ========== 凑十法面板 ========== -->
+<div class="panel active" id="panel-make">
+    <div class="custom-input">
+        <h3>✏️ 自定义算式：</h3>
+        <div class="custom-row">
+            <input type="number" id="make-custom-a" min="1" max="9" placeholder="?">
+            <span class="custom-op">+</span>
+            <input type="number" id="make-custom-b" min="1" max="9" placeholder="?">
+            <button class="custom-go" onclick="customMake()">开始学习</button>
+        </div>
+        <div class="custom-error" id="make-custom-error"></div>
+    </div>
+    <div class="problem-selector">
+        <h3>或选择预设题目：</h3>
+        <div class="problem-list" id="make-problems"></div>
+    </div>
+    <div class="demo-area" id="make-demo">
+        <div class="demo-header" id="make-title">—</div>
+        <div class="demo-hint">输入自定义算式或点击预设题目，然后点"下一步"开始学习</div>
+        <div class="steps-container" id="make-steps"></div>
+        <div class="controls">
+            <button class="ctrl-btn btn-prev" id="make-prev" onclick="makePrev()" disabled>← 上一步</button>
+            <button class="ctrl-btn btn-next" id="make-next" onclick="makeNext()">下一步 →</button>
+            <button class="ctrl-btn btn-reset" id="make-reset" onclick="makeReset()" style="display:none">重新开始</button>
+        </div>
+        <div class="tip-box">
+            <h4>💡 凑十法口诀</h4>
+            <p>
+                <span class="rhyme">看大数</span>，<span class="rhyme">拆小数</span>，
+                <span class="rhyme">先凑十</span>，<span class="rhyme">再加余</span>！
+            </p>
+            <p style="margin-top:8px;font-size:0.85rem;color:#aaa;">
+                适用场景：20以内的进位加法（如 8+5、7+6 等）
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ========== 破十法面板 ========== -->
+<div class="panel" id="panel-break">
+    <div class="custom-input">
+        <h3>✏️ 自定义算式：</h3>
+        <div class="custom-row">
+            <input type="number" id="break-custom-a" min="11" max="19" placeholder="1?">
+            <span class="custom-op">−</span>
+            <input type="number" id="break-custom-b" min="1" max="9" placeholder="?">
+            <button class="custom-go" onclick="customBreak()">开始学习</button>
+        </div>
+        <div class="custom-error" id="break-custom-error"></div>
+    </div>
+    <div class="problem-selector">
+        <h3>或选择预设题目：</h3>
+        <div class="problem-list" id="break-problems"></div>
+    </div>
+    <div class="demo-area" id="break-demo">
+        <div class="demo-header" id="break-title">—</div>
+        <div class="demo-hint">输入自定义算式或点击预设题目，然后点"下一步"开始学习</div>
+        <div class="steps-container" id="break-steps"></div>
+        <div class="controls">
+            <button class="ctrl-btn btn-prev" id="break-prev" onclick="breakPrev()" disabled>← 上一步</button>
+            <button class="ctrl-btn btn-next" id="break-next" onclick="breakNext()">下一步 →</button>
+            <button class="ctrl-btn btn-reset" id="break-reset" onclick="breakReset()" style="display:none">重新开始</button>
+        </div>
+        <div class="tip-box">
+            <h4>💡 破十法口诀</h4>
+            <p>
+                <span class="rhyme">拆十几</span>，<span class="rhyme">为十和几</span>，
+                <span class="rhyme">十减几</span>，<span class="rhyme">再加几</span>！
+            </p>
+            <p style="margin-top:8px;font-size:0.85rem;color:#aaa;">
+                适用场景：20以内的退位减法（如 13-8、15-7 等）
+            </p>
+        </div>
+    </div>
+</div>
+
+<footer>© 2026 教学资源平台</footer>
+
+<script>
+/* ============================
+   凑十法数据与逻辑
+   ============================ */
+const makeProblems = [
+    { a: 9, b: 4 },
+    { a: 8, b: 5 },
+    { a: 7, b: 6 },
+    { a: 8, b: 7 },
+    { a: 9, b: 6 },
+    { a: 7, b: 5 },
+    { a: 6, b: 7 },
+    { a: 8, b: 4 },
+    { a: 9, b: 3 },
+    { a: 5, b: 8 },
+];
+
+let makeIdx = -1, makeStep = -1;
+let makeCustomProblem = null; // 自定义题目 {a, b}
+
+function buildMakeProblems() {
+    const el = document.getElementById('make-problems');
+    el.innerHTML = makeProblems.map((p, i) =>
+        `<button class="problem-btn" onclick="selectMake(${i})">${p.a} + ${p.b}</button>`
+    ).join('');
+}
+
+function selectMake(i) {
+    makeIdx = i;
+    makeStep = -1;
+    makeCustomProblem = null;
+    clearMakeError();
+    document.querySelectorAll('#make-problems .problem-btn').forEach((b, j) => b.classList.toggle('active', j === i));
+    const p = makeProblems[i];
+    document.getElementById('make-title').textContent = `${p.a} + ${p.b} = ?`;
+    document.getElementById('make-steps').innerHTML = '';
+    document.getElementById('make-next').disabled = false;
+    document.getElementById('make-next').style.display = '';
+    document.getElementById('make-prev').disabled = true;
+    document.getElementById('make-reset').style.display = 'none';
+}
+
+function getMakeProblem() {
+    if (makeCustomProblem) return makeCustomProblem;
+    if (makeIdx >= 0) return makeProblems[makeIdx];
+    return null;
+}
+
+function clearMakeError() { document.getElementById('make-custom-error').textContent = ''; }
+function showMakeError(msg) { document.getElementById('make-custom-error').textContent = msg; }
+
+function customMake() {
+    clearMakeError();
+    const aInput = document.getElementById('make-custom-a');
+    const bInput = document.getElementById('make-custom-b');
+    const a = parseInt(aInput.value);
+    const b = parseInt(bInput.value);
+    if (isNaN(a) || isNaN(b)) { showMakeError('请输入两个数字'); return; }
+    if (a < 1 || a > 9 || b < 1 || b > 9) { showMakeError('请输入 1~9 之间的数字'); return; }
+    if (a + b <= 10) { showMakeError(`${a} + ${b} = ${a+b}，不需要凑十法哦！请输入和大于10的算式`); return; }
+    // 取消预设选中
+    document.querySelectorAll('#make-problems .problem-btn').forEach(b => b.classList.remove('active'));
+    makeIdx = -1;
+    makeCustomProblem = { a, b };
+    makeStep = -1;
+    document.getElementById('make-title').textContent = `${a} + ${b} = ?`;
+    document.getElementById('make-steps').innerHTML = '';
+    document.getElementById('make-next').disabled = false;
+    document.getElementById('make-next').style.display = '';
+    document.getElementById('make-prev').disabled = true;
+    document.getElementById('make-reset').style.display = 'none';
+}
+
+function makeSteps(p) {
+    const { a, b } = p;
+    // 看大数: 确保 a >= b，否则交换
+    let big = a, small = b;
+    if (a < b) { big = b; small = a; }
+    const need = 10 - big;       // 大数还需要多少凑成10
+    const part1 = need;          // 从小数中拆出 need
+    const part2 = small - need;  // 小数剩余
+    const result = big + small;
+
+    return [
+        {
+            label: '第一步：看大数，确定目标',
+            expr: `<span class="num num-blue">${big}</span> <span class="op">+</span> <span class="num num-orange">${small}</span> <span class="op">= ?</span>`,
+            hint: `大数是 <b>${big}</b>，离 10 还差 <b>${need}</b>`,
+            dots: buildDots(big, 'blue', `${big}`) + ' ' + buildDots(small, 'orange', `${small}`)
+        },
+        {
+            label: `第二步：拆小数 — 把 ${small} 拆成 ${part1} 和 ${part2}`,
+            expr: `<span class="num num-orange">${small}</span> <span class="eq">→</span> <span class="num num-green">${part1}</span> <span class="op">+</span> <span class="num num-purple">${part2}</span>`,
+            hint: `从 ${small} 里拿出 <b>${part1}</b> 给 ${big} 凑十，剩下 <b>${part2}</b>`,
+            dots: buildDots(part1, 'green', `${part1}`) + ' ' + buildDots(part2, 'purple', `${part2}`)
+        },
+        {
+            label: `第三步：凑十 — ${big} + ${part1} = 10`,
+            expr: `<span class="num num-blue">${big}</span> <span class="op">+</span> <span class="num num-green">${part1}</span> <span class="eq">=</span> <span class="num num-red">10</span>`,
+            hint: `${big} 和 ${part1} 合在一起正好是 <b>10</b>！`,
+            dots: buildDots(big, 'blue', '') + buildDots(part1, 'green', '') + ' <span style="font-size:1.4rem;font-weight:bold;color:#e67e22;margin-left:8px">= 10 ✓</span>'
+        },
+        {
+            label: `第四步：十加余 — 10 + ${part2} = ${result}`,
+            expr: `<span class="num num-red">10</span> <span class="op">+</span> <span class="num num-purple">${part2}</span> <span class="eq">=</span> <span class="num num-red" style="font-size:1.8rem">${result}</span>`,
+            hint: `最终答案：<b>${big} + ${small} = ${result}</b>  🎉`,
+            dots: buildDots(10, 'red', '10') + ' ' + buildDots(part2, 'purple', `${part2}`) + ` <span style="font-size:1.4rem;font-weight:bold;color:#27ae60;margin-left:8px">= ${result} 🎉</span>`
+        }
+    ];
+}
+
+function buildDots(n, color, label) {
+    let h = '<div class="visual-block" style="display:inline-flex;vertical-align:middle;gap:3px;">';
+    for (let i = 0; i < n; i++) h += `<span class="dot dot-${color} merged"></span>`;
+    if (label) h += `<span style="font-size:0.85rem;color:#888;margin-left:4px">${label}</span>`;
+    h += '</div>';
+    return h;
+}
+
+function makeNext() {
+    const p = getMakeProblem();
+    if (!p) return;
+    const steps = makeSteps(p);
+    makeStep++;
+    if (makeStep >= steps.length) {
+        makeStep = steps.length - 1;
+        return;
+    }
+    const s = steps[makeStep];
+    const container = document.getElementById('make-steps');
+    // 去掉上一步高亮
+    container.querySelectorAll('.step.highlight').forEach(el => el.classList.remove('highlight'));
+    // 插入新步骤
+    const div = document.createElement('div');
+    div.className = 'step';
+    div.innerHTML = `
+        <div class="step-num">${makeStep + 1}</div>
+        <div class="step-content">
+            <div class="step-label">${s.label}</div>
+            <div class="step-expr">${s.expr}</div>
+            <div style="margin-top:6px;font-size:0.9rem;color:#888">${s.hint}</div>
+            <div style="margin-top:6px">${s.dots}</div>
+        </div>`;
+    container.appendChild(div);
+    requestAnimationFrame(() => { div.classList.add('visible', 'highlight'); });
+
+    document.getElementById('make-prev').disabled = false;
+    if (makeStep >= steps.length - 1) {
+        document.getElementById('make-next').style.display = 'none';
+        document.getElementById('make-reset').style.display = '';
+    }
+}
+
+function makePrev() {
+    if (makeStep < 0) return;
+    const container = document.getElementById('make-steps');
+    const last = container.lastElementChild;
+    if (last) container.removeChild(last);
+    makeStep--;
+    if (makeStep >= 0) {
+        container.lastElementChild.classList.add('highlight');
+    }
+    document.getElementById('make-prev').disabled = makeStep < 0;
+    document.getElementById('make-next').style.display = '';
+    document.getElementById('make-reset').style.display = 'none';
+}
+
+function makeReset() {
+    if (makeCustomProblem) {
+        makeStep = -1;
+        document.getElementById('make-steps').innerHTML = '';
+        document.getElementById('make-next').disabled = false;
+        document.getElementById('make-next').style.display = '';
+        document.getElementById('make-prev').disabled = true;
+        document.getElementById('make-reset').style.display = 'none';
+    } else if (makeIdx >= 0) {
+        selectMake(makeIdx);
+    }
+}
+
+/* ============================
+   破十法数据与逻辑
+   ============================ */
+const breakProblems = [
+    { a: 13, b: 8 },
+    { a: 15, b: 7 },
+    { a: 12, b: 5 },
+    { a: 14, b: 9 },
+    { a: 11, b: 6 },
+    { a: 16, b: 8 },
+    { a: 17, b: 9 },
+    { a: 13, b: 5 },
+    { a: 18, b: 9 },
+    { a: 15, b: 8 },
+];
+
+let breakIdx = -1, breakStep = -1;
+let breakCustomProblem = null;
+
+function buildBreakProblems() {
+    const el = document.getElementById('break-problems');
+    el.innerHTML = breakProblems.map((p, i) =>
+        `<button class="problem-btn" onclick="selectBreak(${i})">${p.a} - ${p.b}</button>`
+    ).join('');
+}
+
+function selectBreak(i) {
+    breakIdx = i;
+    breakStep = -1;
+    breakCustomProblem = null;
+    clearBreakError();
+    document.querySelectorAll('#break-problems .problem-btn').forEach((b, j) => b.classList.toggle('active', j === i));
+    const p = breakProblems[i];
+    document.getElementById('break-title').textContent = `${p.a} - ${p.b} = ?`;
+    document.getElementById('break-steps').innerHTML = '';
+    document.getElementById('break-next').disabled = false;
+    document.getElementById('break-next').style.display = '';
+    document.getElementById('break-prev').disabled = true;
+    document.getElementById('break-reset').style.display = 'none';
+}
+
+function getBreakProblem() {
+    if (breakCustomProblem) return breakCustomProblem;
+    if (breakIdx >= 0) return breakProblems[breakIdx];
+    return null;
+}
+
+function clearBreakError() { document.getElementById('break-custom-error').textContent = ''; }
+function showBreakError(msg) { document.getElementById('break-custom-error').textContent = msg; }
+
+function customBreak() {
+    clearBreakError();
+    const aInput = document.getElementById('break-custom-a');
+    const bInput = document.getElementById('break-custom-b');
+    const a = parseInt(aInput.value);
+    const b = parseInt(bInput.value);
+    if (isNaN(a) || isNaN(b)) { showBreakError('请输入两个数字'); return; }
+    if (a < 11 || a > 19) { showBreakError('被减数请输入 11~19 之间的数字'); return; }
+    if (b < 1 || b > 9) { showBreakError('减数请输入 1~9 之间的数字'); return; }
+    if (a - b >= 10) { showBreakError(`${a} - ${b} = ${a-b}，不需要破十法哦！`); return; }
+    if (b <= a % 10) { showBreakError(`${a} - ${b} 个位够减，不需要破十法哦！`); return; }
+    document.querySelectorAll('#break-problems .problem-btn').forEach(b => b.classList.remove('active'));
+    breakIdx = -1;
+    breakCustomProblem = { a, b };
+    breakStep = -1;
+    document.getElementById('break-title').textContent = `${a} - ${b} = ?`;
+    document.getElementById('break-steps').innerHTML = '';
+    document.getElementById('break-next').disabled = false;
+    document.getElementById('break-next').style.display = '';
+    document.getElementById('break-prev').disabled = true;
+    document.getElementById('break-reset').style.display = 'none';
+}
+
+function breakSteps(p) {
+    const { a, b } = p;
+    const ones = a - 10;           // 个位部分
+    const tenMinus = 10 - b;       // 10 - 减数
+    const result = tenMinus + ones;
+
+    return [
+        {
+            label: '第一步：拆被减数 — 把十几拆成 10 和几',
+            expr: `<span class="num num-blue">${a}</span> <span class="eq">→</span> <span class="num num-red">10</span> <span class="op">+</span> <span class="num num-green">${ones}</span>`,
+            hint: `${a} 拆成 <b>10</b> 和 <b>${ones}</b>`,
+            dots: buildDots(10, 'red', '10') + ' ' + buildDots(ones, 'green', `${ones}`)
+        },
+        {
+            label: `第二步：用十减 — 10 - ${b} = ${tenMinus}`,
+            expr: `<span class="num num-red">10</span> <span class="op">-</span> <span class="num num-orange">${b}</span> <span class="eq">=</span> <span class="num num-purple">${tenMinus}</span>`,
+            hint: `从 10 里面减去 <b>${b}</b>，还剩 <b>${tenMinus}</b>`,
+            dots: buildBreakDots(10, b) + ` <span style="font-size:1.2rem;font-weight:bold;color:#e67e22">→ 剩 ${tenMinus}</span>`
+        },
+        {
+            label: `第三步：合并 — ${tenMinus} + ${ones} = ${result}`,
+            expr: `<span class="num num-purple">${tenMinus}</span> <span class="op">+</span> <span class="num num-green">${ones}</span> <span class="eq">=</span> <span class="num num-red" style="font-size:1.8rem">${result}</span>`,
+            hint: `把第二步的结果和个位部分合起来：<b>${tenMinus} + ${ones} = ${result}</b>  🎉`,
+            dots: buildDots(tenMinus, 'purple', `${tenMinus}`) + ' ' + buildDots(ones, 'green', `${ones}`) + ` <span style="font-size:1.4rem;font-weight:bold;color:#27ae60;margin-left:8px">= ${result} 🎉</span>`
+        }
+    ];
+}
+
+function buildBreakDots(total, removed) {
+    let h = '<div class="visual-block" style="display:inline-flex;vertical-align:middle;gap:3px;">';
+    for (let i = 0; i < total; i++) {
+        const cls = i < removed ? 'dot-gray fly-away' : 'dot-red';
+        h += `<span class="dot ${cls}"></span>`;
+    }
+    h += '</div>';
+    return h;
+}
+
+function breakNext() {
+    const p = getBreakProblem();
+    if (!p) return;
+    const steps = breakSteps(p);
+    breakStep++;
+    if (breakStep >= steps.length) {
+        breakStep = steps.length - 1;
+        return;
+    }
+    const s = steps[breakStep];
+    const container = document.getElementById('break-steps');
+    container.querySelectorAll('.step.highlight').forEach(el => el.classList.remove('highlight'));
+    const div = document.createElement('div');
+    div.className = 'step';
+    div.innerHTML = `
+        <div class="step-num">${breakStep + 1}</div>
+        <div class="step-content">
+            <div class="step-label">${s.label}</div>
+            <div class="step-expr">${s.expr}</div>
+            <div style="margin-top:6px;font-size:0.9rem;color:#888">${s.hint}</div>
+            <div style="margin-top:6px">${s.dots}</div>
+        </div>`;
+    container.appendChild(div);
+    requestAnimationFrame(() => { div.classList.add('visible', 'highlight'); });
+
+    document.getElementById('break-prev').disabled = false;
+    if (breakStep >= steps.length - 1) {
+        document.getElementById('break-next').style.display = 'none';
+        document.getElementById('break-reset').style.display = '';
+    }
+}
+
+function breakPrev() {
+    if (breakStep < 0) return;
+    const container = document.getElementById('break-steps');
+    const last = container.lastElementChild;
+    if (last) container.removeChild(last);
+    breakStep--;
+    if (breakStep >= 0) {
+        container.lastElementChild.classList.add('highlight');
+    }
+    document.getElementById('break-prev').disabled = breakStep < 0;
+    document.getElementById('break-next').style.display = '';
+    document.getElementById('break-reset').style.display = 'none';
+}
+
+function breakReset() {
+    if (breakCustomProblem) {
+        breakStep = -1;
+        document.getElementById('break-steps').innerHTML = '';
+        document.getElementById('break-next').disabled = false;
+        document.getElementById('break-next').style.display = '';
+        document.getElementById('break-prev').disabled = true;
+        document.getElementById('break-reset').style.display = 'none';
+    } else if (breakIdx >= 0) {
+        selectBreak(breakIdx);
+    }
+}
+
+/* ============================
+   选项卡切换
+   ============================ */
+function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    if (tab === 'make') {
+        document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+        document.getElementById('panel-make').classList.add('active');
+    } else {
+        document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+        document.getElementById('panel-break').classList.add('active');
+    }
+}
+
+/* 初始化 */
+buildMakeProblems();
+buildBreakProblems();
+</script>
+</body>
+</html>
