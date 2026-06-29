@@ -23,3 +23,7 @@ def length_units(request):
 
 def rmb(request):
     return render(request, 'rmb.html')
+
+
+def number_line(request):
+    return render(request, 'number_line.html')
