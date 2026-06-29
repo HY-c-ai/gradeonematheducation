@@ -27,3 +27,7 @@ def rmb(request):
 
 def number_line(request):
     return render(request, 'number_line.html')
+
+
+def multiplication(request):
+    return render(request, 'multiplication.html')

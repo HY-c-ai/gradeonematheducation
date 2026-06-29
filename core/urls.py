@@ -9,4 +9,5 @@ urlpatterns = [
     path('length-units', views.length_units, name='length_units'),
     path('rmb', views.rmb, name='rmb'),
     path('number-line', views.number_line, name='number_line'),
+    path('multiplication', views.multiplication, name='multiplication'),
 ]
