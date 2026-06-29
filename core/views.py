@@ -31,3 +31,7 @@ def number_line(request):
 
 def multiplication(request):
     return render(request, 'multiplication.html')
+
+
+def division(request):
+    return render(request, 'division.html')
