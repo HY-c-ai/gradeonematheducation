@@ -259,6 +259,65 @@
             background: linear-gradient(145deg, #bdc3c7, #95a5a6);
         }
 
+        .btn-hide {
+            background: linear-gradient(145deg, #8e44ad, #6c3483);
+            color: white;
+            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.4);
+        }
+        .btn-hide:hover {
+            background: linear-gradient(145deg, #9b59b6, #8e44ad);
+            box-shadow: 0 6px 20px rgba(142, 68, 173, 0.6);
+        }
+
+        .btn-show {
+            background: linear-gradient(145deg, #f39c12, #e67e22);
+            color: white;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+        }
+        .btn-show:hover {
+            background: linear-gradient(145deg, #f1c40f, #f39c12);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+
+        /* 隐藏数字状态 */
+        .digit-box.hidden-number {
+            color: rgba(255, 215, 0, 0.15);
+            text-shadow: none;
+            position: relative;
+        }
+        .digit-box.hidden-number::after {
+            content: '?';
+            position: absolute;
+            color: #ffd700;
+            font-size: 2.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            animation: questionPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes questionPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .hidden-indicator {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(142, 68, 173, 0.9);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            pointer-events: none;
+            animation: fadeInOut 1.5s ease;
+        }
+
+        .number-display {
+            position: relative;
+        }
+
         .carry-msg {
             color: #ffd700;
             font-size: 1.1rem;
@@ -334,6 +393,8 @@
         <button class="btn btn-sub" onclick="subtractOne()">− 1</button>
         <button class="btn btn-reset" onclick="resetAll()">清零</button>
         <button class="btn btn-add" onclick="addOne()">+ 1</button>
+        <button class="btn btn-hide" id="btn-hide" onclick="hideNumber()">🙈 隐藏数字</button>
+        <button class="btn btn-show" id="btn-show" onclick="showNumber()" style="display: none;">👁 显示数字</button>
     </div>
 
     <div class="carry-msg" id="carry-msg"></div>
@@ -348,6 +409,7 @@
     <script>
         // positions[0]=个位, [1]=十位, [2]=百位, [3]=千位，每个值 0~9
         let positions = [0, 0, 0, 0];
+        let numberHidden = false;
         const MAX_VALUE = 9999;
         const posNames = ['个位', '十位', '百位', '千位'];
         const rodLabels = ['个位', '十位', '百位', '千位'];
@@ -406,9 +468,21 @@
                 const val = positions[p];
                 // 数字显示
                 const display = document.getElementById(`display-${p}`);
+                if (numberHidden) {
+                    display.classList.add('hidden-number');
+                } else {
+                    display.classList.remove('hidden-number');
+                }
                 display.textContent = val;
                 // 杆下方计数
-                document.getElementById(`count-${p}`).textContent = val;
+                const rodCount = document.getElementById(`count-${p}`);
+                if (numberHidden) {
+                    rodCount.textContent = '?';
+                    rodCount.style.color = 'rgba(255,255,255,0.4)';
+                } else {
+                    rodCount.textContent = val;
+                    rodCount.style.color = '';
+                }
 
                 // 珠子状态
                 const rod = document.getElementById(`rod-${p}`);
@@ -486,6 +560,31 @@
             document.getElementById('overflow-warning').textContent = '';
         }
 
+        function hideNumber() {
+            numberHidden = true;
+            updateUI();
+            document.getElementById('btn-hide').style.display = 'none';
+            document.getElementById('btn-show').style.display = '';
+            // 显示隐藏提示
+            const display = document.querySelector('.number-display');
+            let indicator = document.getElementById('hidden-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'hidden-indicator';
+                indicator.className = 'hidden-indicator';
+                indicator.textContent = '🔒 数字已隐藏';
+                display.appendChild(indicator);
+                setTimeout(() => { if (indicator.parentNode) indicator.remove(); }, 2000);
+            }
+        }
+
+        function showNumber() {
+            numberHidden = false;
+            updateUI();
+            document.getElementById('btn-hide').style.display = '';
+            document.getElementById('btn-show').style.display = 'none';
+        }
+
         // 点击珠子：拨上去（加到该位）
         function clickBead(pos, beadIdx) {
             const cur = positions[pos];
@@ -523,6 +622,10 @@
             if (e.key === 'ArrowUp' || e.key === '+') addOne();
             else if (e.key === 'ArrowDown' || e.key === '-') subtractOne();
             else if (e.key === 'r' || e.key === 'R') resetAll();
+            else if (e.key === ' ' || e.key === 'Spacebar') {
+                e.preventDefault();
+                if (numberHidden) showNumber(); else hideNumber();
+            }
         });
 
         // 启动
