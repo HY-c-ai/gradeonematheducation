@@ -205,6 +205,26 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.08);
         }
 
+        /* 独立抽取按钮 */
+        .btn-roll {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 28px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            gap: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 2px solid;
+            transition: all 0.2s;
+        }
+        .btn-roll:hover { filter: brightness(0.93); transform: translateY(-2px); }
+        .btn-roll:active { transform: scale(0.96); }
+        .btn-roll-initial { background: #e3f2fd; color: #1565c0; border-color: #90caf9; }
+        .btn-roll-final { background: #ffebee; color: #c62828; border-color: #ef9a9a; }
+        .btn-roll-tone { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+        .btn-roll-all { background: linear-gradient(135deg, #43a047, #66bb6a); color: #fff; border-color: transparent; padding: 14px 36px; font-size: 1.1rem; }
+        .btn-roll-er { background: #f3e5f5; color: #7b1fa2; border-color: #ce93d8; }
+
         /* 历史记录 */
         .history-area {
             background: #fff;
@@ -413,8 +433,13 @@
             <div class="tone-name" id="tone-name"></div>
         </div>
         <div style="color:#aaa;font-size:0.9rem;margin-bottom:6px;min-height:1.3em;" id="er-hint"></div>
-        <div class="btn-row">
-            <button class="btn btn-generate" onclick="generatePinyin()">🎲 换一个拼音</button>
+        <div class="btn-row" style="gap:10px;margin-top:8px;">
+            <button class="btn btn-roll btn-roll-initial" onclick="rerollInitial()" id="btn-reroll-initial">🔄 换声母</button>
+            <button class="btn btn-roll btn-roll-final" onclick="rerollFinal()" id="btn-reroll-final">🔄 换韵母</button>
+            <button class="btn btn-roll btn-roll-tone" onclick="rerollTone()" id="btn-reroll-tone">🔄 换声调</button>
+        </div>
+        <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-roll btn-roll-all" onclick="rerollAll()">🎲 全部随机</button>
         </div>
     </div>
 
@@ -653,51 +678,154 @@ function randomInt(min, max) {
    拼音生成逻辑
    ============================================ */
 
-function generatePinyin() {
-    // 约 12% 概率出 er
+// 当前抽取状态：{ initial, final, tone, isEr }
+let currentState = null;
+
+/** 初始化：完全随机生成 */
+function rerollAll() {
     const roll = Math.random();
     if (roll < 0.12) {
-        return generateEr();
+        const erInfo = randomPick(ER_TONES);
+        currentState = {
+            type: 'er',
+            initial: '',
+            final: 'er',
+            tone: erInfo.tone,
+            isEr: true
+        };
+    } else {
+        const initial = randomPick(INITIALS);
+        const validFinals = VALID_COMBINATIONS[initial];
+        const final = randomPick(validFinals);
+        const tone = randomInt(1, 4);
+        currentState = {
+            type: 'normal',
+            initial: initial,
+            final: final,
+            tone: tone,
+            isEr: false
+        };
     }
-    return generateNormal();
+    applyState();
 }
 
-function generateEr() {
-    const erInfo = randomPick(ER_TONES);
-    return {
-        type: 'er',
-        initial: '',
-        final: 'er',
-        tone: erInfo.tone,
-        fullPinyin: erInfo.text,
-        toneName: erInfo.name,
-        char: erInfo.char,
-        isEr: true
-    };
+/** 独立抽取：仅重新随机声母 */
+function rerollInitial() {
+    if (!currentState) { rerollAll(); return; }
+    // 如果当前是 er，切换到普通模式
+    if (currentState.isEr) {
+        const initial = randomPick(INITIALS);
+        const validFinals = VALID_COMBINATIONS[initial];
+        const final = randomPick(validFinals);
+        currentState = {
+            type: 'normal',
+            initial: initial,
+            final: final,
+            tone: currentState.tone,
+            isEr: false
+        };
+    } else {
+        const newInitial = randomPick(INITIALS);
+        const validFinals = VALID_COMBINATIONS[newInitial];
+        // 如果当前韵母与新声母不兼容，则重新随机韵母
+        let newFinal = currentState.final;
+        if (!validFinals.includes(newFinal)) {
+            newFinal = randomPick(validFinals);
+        }
+        currentState.initial = newInitial;
+        currentState.final = newFinal;
+    }
+    applyState();
 }
 
-function generateNormal() {
-    // 随机选声母
-    const initial = randomPick(INITIALS);
-    // 从该声母的合法韵母中随机选
-    const validFinals = VALID_COMBINATIONS[initial];
-    const final = randomPick(validFinals);
-    // 随机声调 1-4
-    const tone = randomInt(1, 4);
+/** 独立抽取：仅重新随机韵母 */
+function rerollFinal() {
+    if (!currentState) { rerollAll(); return; }
+    // 约 10% 概率切换到 er
+    if (Math.random() < 0.10) {
+        const erInfo = randomPick(ER_TONES);
+        currentState = {
+            type: 'er',
+            initial: '',
+            final: 'er',
+            tone: erInfo.tone,
+            isEr: true
+        };
+    } else if (currentState.isEr) {
+        // 当前是 er，切换到普通模式
+        const initial = randomPick(INITIALS);
+        const validFinals = VALID_COMBINATIONS[initial];
+        const final = randomPick(validFinals);
+        currentState = {
+            type: 'normal',
+            initial: initial,
+            final: final,
+            tone: currentState.tone,
+            isEr: false
+        };
+    } else {
+        const validFinals = VALID_COMBINATIONS[currentState.initial];
+        currentState.final = randomPick(validFinals);
+    }
+    applyState();
+}
 
-    // j q x 后的 ü 在拼接时保持 ü
-    let rawPinyin = initial + final;
-    let fullPinyin = applyTone(rawPinyin, tone);
+/** 独立抽取：仅重新随机声调 */
+function rerollTone() {
+    if (!currentState) { rerollAll(); return; }
+    if (currentState.isEr) {
+        // er 只有 2、3、4 声
+        const erInfo = randomPick(ER_TONES);
+        currentState.tone = erInfo.tone;
+    } else {
+        currentState.tone = randomInt(1, 4);
+    }
+    applyState();
+}
 
-    return {
-        type: 'normal',
-        initial: initial,
-        final: final,
-        tone: tone,
+/** 根据 currentState 计算完整拼音并渲染 */
+function applyState() {
+    const s = currentState;
+    let fullPinyin;
+    if (s.isEr) {
+        const erInfo = ER_TONES.find(e => e.tone === s.tone) || ER_TONES[0];
+        fullPinyin = erInfo.text;
+    } else {
+        const rawPinyin = s.initial + s.final;
+        fullPinyin = applyTone(rawPinyin, s.tone);
+    }
+    renderPinyin({
+        type: s.type,
+        initial: s.initial,
+        final: s.final,
+        tone: s.tone,
         fullPinyin: fullPinyin,
-        toneName: TONE_NAMES[tone],
-        isEr: false
-    };
+        toneName: TONE_NAMES[s.tone],
+        isEr: s.isEr
+    });
+    updateRollButtons();
+}
+
+/** 更新抽取按钮状态（er 模式下禁用声母按钮） */
+function updateRollButtons() {
+    const btnInit = document.getElementById('btn-reroll-initial');
+    const btnFinal = document.getElementById('btn-reroll-final');
+    const btnTone = document.getElementById('btn-reroll-tone');
+    if (!btnInit) return;
+    if (currentState.isEr) {
+        btnInit.classList.add('btn-roll-er');
+        btnInit.classList.remove('btn-roll-initial');
+        btnInit.innerHTML = '🚫 无声母';
+    } else {
+        btnInit.classList.remove('btn-roll-er');
+        btnInit.classList.add('btn-roll-initial');
+        btnInit.innerHTML = '🔄 换声母';
+    }
+}
+
+/** 兼容旧接口 */
+function generatePinyin() {
+    rerollAll();
 }
 
 /* ============================================
@@ -888,7 +1016,8 @@ function resetPracticeTones() {
 
 function randomPractice() {
     // 随机生成一个合法搭配填充到下拉框
-    const data = generatePinyin();
+    rerollAll();
+    const data = currentState;
     document.getElementById('sel-initial').value = data.initial || '';
     document.getElementById('sel-final').value = data.final || '';
     document.getElementById('sel-tone').value = data.tone || '0';
@@ -976,23 +1105,28 @@ function quickGenerate(initial, final) {
     closeTable();
     switchMode('random');
     const tone = randomInt(1, 4);
-    const rawPinyin = initial + final;
-    const fullPinyin = applyTone(rawPinyin, tone);
-    renderPinyin({
+    currentState = {
         type: 'normal',
         initial: initial,
         final: final,
         tone: tone,
-        fullPinyin: fullPinyin,
-        toneName: TONE_NAMES[tone],
         isEr: false
-    });
+    };
+    applyState();
 }
 
 function quickGenerateEr() {
     closeTable();
     switchMode('random');
-    renderPinyin(generateEr());
+    const erInfo = randomPick(ER_TONES);
+    currentState = {
+        type: 'er',
+        initial: '',
+        final: 'er',
+        tone: erInfo.tone,
+        isEr: true
+    };
+    applyState();
 }
 
 // 点击遮罩关闭
@@ -1004,7 +1138,7 @@ document.getElementById('table-overlay').addEventListener('click', function(e) {
    初始化
    ============================================ */
 initPracticeSelects();
-generatePinyin();  // 初始随机生成一个
+rerollAll();  // 初始随机生成一个
 </script>
 </body>
 </html>
