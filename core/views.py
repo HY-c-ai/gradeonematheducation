@@ -35,3 +35,7 @@ def multiplication(request):
 
 def division(request):
     return render(request, 'division.html')
+
+
+def pinyin(request):
+    return render(request, 'pinyin.html')

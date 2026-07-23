@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼音学习</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 50%, #d4fc79 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px;
+        }
+
+        .top-bar {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            background: rgba(255,255,255,0.75);
+            border: none;
+            border-radius: 50%;
+            width: 44px; height: 44px;
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            transition: background 0.2s;
+            text-decoration: none;
+            color: #333;
+        }
+        .back-btn:hover { background: #fff; }
+        .page-title {
+            flex: 1;
+            text-align: center;
+            font-size: 1.8rem;
+            color: #2c5f2d;
+            font-weight: bold;
+            margin-right: 44px;
+        }
+
+        /* 主卡片 */
+        .main-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 40px 36px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* 模式切换 */
+        .mode-tabs {
+            display: flex;
+            gap: 4px;
+            background: #f0f4f0;
+            border-radius: 40px;
+            padding: 5px;
+            margin-bottom: 32px;
+        }
+        .mode-btn {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 12px 20px;
+            border-radius: 36px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: #5a7a5a;
+            transition: all 0.25s;
+        }
+        .mode-btn.active {
+            background: #fff;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+            color: #2e7d32;
+        }
+        .mode-btn:not(.active):hover { background: rgba(255,255,255,0.5); }
+
+        /* 拼音展示区 */
+        .pinyin-display {
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .pinyin-big {
+            font-size: 6rem;
+            font-weight: bold;
+            color: #1b5e20;
+            letter-spacing: 0.05em;
+            line-height: 1.2;
+            transition: all 0.3s ease;
+            animation: fadeInUp 0.5s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .pinyin-parts {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .part-tag {
+            padding: 6px 18px;
+            border-radius: 20px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 0.05em;
+        }
+        .tag-initial { background: #42a5f5; }
+        .tag-final { background: #ef5350; }
+        .tag-tone { background: #ff9800; }
+        .tag-er { background: #ab47bc; }
+
+        .tone-visual {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            justify-content: center;
+        }
+        .tone-dot {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            color: #999;
+            background: #f5f5f5;
+        }
+        .tone-dot.active {
+            transform: scale(1.2);
+            color: #fff;
+            border-color: rgba(255,255,255,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .tone-1 { background: #66bb6a; }
+        .tone-2 { background: #42a5f5; }
+        .tone-3 { background: #ffa726; }
+        .tone-4 { background: #ef5350; }
+
+        .tone-name {
+            color: #888;
+            font-size: 0.95rem;
+            margin-top: 10px;
+            min-height: 1.4em;
+        }
+
+        /* 按钮 */
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            border: none;
+            border-radius: 30px;
+            padding: 14px 32px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-generate {
+            background: linear-gradient(135deg, #43a047, #66bb6a);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(67,160,71,0.4);
+            font-size: 1.15rem;
+            padding: 16px 40px;
+        }
+        .btn-speak {
+            background: #fff;
+            color: #43a047;
+            border: 2px solid #43a047;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        /* 历史记录 */
+        .history-area {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .history-area h3 {
+            color: #555;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .history-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .history-item {
+            background: #f5f5f5;
+            border-radius: 14px;
+            padding: 8px 16px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .history-item:hover {
+            background: #e8f5e9;
+            border-color: #66bb6a;
+            transform: translateY(-2px);
+        }
+        .history-item.special-er {
+            background: #f3e5f5;
+            border-color: #e1bee7;
+        }
+
+        .no-history {
+            color: #ccc;
+            font-style: italic;
+            font-size: 0.95rem;
+        }
+
+        /* 规则提示 */
+        .rules-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .rules-card summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+            font-size: 1rem;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .rules-card summary::-webkit-details-marker { display: none; }
+        .rules-content {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .rule-item {
+            background: #f9fdf9;
+            border: 1px solid #e0ece0;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.7;
+        }
+        .rule-item strong { color: #2e7d32; }
+        .rule-item .highlight-er {
+            display: inline-block;
+            background: #f3e5f5;
+            color: #7b1fa2;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        /* 拼音表弹窗 */
+        .table-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .table-overlay.show { display: flex; }
+        .table-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 750px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .table-box h3 {
+            text-align: center;
+            color: #2e7d32;
+            margin-bottom: 16px;
+            font-size: 1.2rem;
+        }
+        .table-box table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        .table-box th, .table-box td {
+            border: 1px solid #e0e0e0;
+            padding: 6px 4px;
+            text-align: center;
+        }
+        .table-box th {
+            background: #e8f5e9;
+            color: #2e7d32;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+        }
+        .table-box td { color: #555; }
+        .table-box td.valid { background: #e8f5e9; color: #1b5e20; font-weight: bold; cursor: pointer; }
+        .table-box td.valid:hover { background: #c8e6c9; }
+        .table-close {
+            display: block;
+            margin: 16px auto 0;
+            border: none;
+            background: #eee;
+            border-radius: 20px;
+            padding: 10px 30px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: bold;
+            color: #555;
+        }
+        .table-close:hover { background: #ddd; }
+
+        .btn-table {
+            background: #fff;
+            color: #7b1fa2;
+            border: 2px solid #ce93d8;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+
+        footer {
+            margin-top: auto;
+            padding-top: 30px;
+            color: rgba(44,95,45,0.4);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .pinyin-big { font-size: 4rem; }
+            .page-title { font-size: 1.3rem; }
+            .main-card { padding: 24px 16px; }
+            .mode-btn { padding: 10px 12px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <a href="/" class="back-btn" title="返回首页">←</a>
+    <div class="page-title">🔤 拼音学习</div>
+</div>
+
+<!-- 模式选择 -->
+<div class="main-card">
+    <div class="mode-tabs">
+        <button class="mode-btn active" onclick="switchMode('random')">🎲 随机出题</button>
+        <button class="mode-btn" onclick="switchMode('practice')">📝 自由拼读</button>
+    </div>
+
+    <!-- 随机出题面板 -->
+    <div class="mode-panel" id="panel-random">
+        <div class="pinyin-display">
+            <div class="pinyin-big" id="pinyin-text">—</div>
+            <div class="pinyin-parts" id="pinyin-parts"></div>
+            <div class="tone-visual">
+                <div class="tone-dot" data-tone="1">ˉ<br><span style="font-size:0.6rem">一声</span></div>
+                <div class="tone-dot" data-tone="2">ˊ<br><span style="font-size:0.6rem">二声</span></div>
+                <div class="tone-dot" data-tone="3">ˇ<br><span style="font-size:0.6rem">三声</span></div>
+                <div class="tone-dot" data-tone="4">ˋ<br><span style="font-size:0.6rem">四声</span></div>
+            </div>
+            <div class="tone-name" id="tone-name"></div>
+        </div>
+        <div style="color:#aaa;font-size:0.9rem;margin-bottom:6px;min-height:1.3em;" id="er-hint"></div>
+        <div class="btn-row">
+            <button class="btn btn-generate" onclick="generatePinyin()">🎲 换一个拼音</button>
+        </div>
+    </div>
+
+    <!-- 自由拼读面板 -->
+    <div class="mode-panel" id="panel-practice" style="display:none;">
+        <div class="pinyin-display">
+            <div class="pinyin-big" id="practice-text">—</div>
+            <div class="pinyin-parts" id="practice-parts"></div>
+            <div class="tone-visual" id="practice-tones">
+                <div class="tone-dot" data-tone="1">ˉ<br><span style="font-size:0.6rem">一声</span></div>
+                <div class="tone-dot" data-tone="2">ˊ<br><span style="font-size:0.6rem">二声</span></div>
+                <div class="tone-dot" data-tone="3">ˇ<br><span style="font-size:0.6rem">三声</span></div>
+                <div class="tone-dot" data-tone="4">ˋ<br><span style="font-size:0.6rem">四声</span></div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;">
+            <select id="sel-initial" onchange="updatePractice()" style="padding:10px 16px;border-radius:12px;border:2px solid #c8e6c9;font-size:1.1rem;font-weight:bold;color:#1b5e20;background:#f1f8e9;cursor:pointer;min-width:100px;">
+                <option value="">选择声母</option>
+            </select>
+            <select id="sel-final" onchange="updatePractice()" style="padding:10px 16px;border-radius:12px;border:2px solid #ffcdd2;font-size:1.1rem;font-weight:bold;color:#c62828;background:#fff5f5;cursor:pointer;min-width:100px;">
+                <option value="">选择韵母</option>
+            </select>
+            <select id="sel-tone" onchange="updatePractice()" style="padding:10px 16px;border-radius:12px;border:2px solid #ffe0b2;font-size:1.1rem;font-weight:bold;color:#e65100;background:#fff8e1;cursor:pointer;min-width:100px;">
+                <option value="0">选择声调</option>
+                <option value="1">一声 ˉ</option>
+                <option value="2">二声 ˊ</option>
+                <option value="3">三声 ˇ</option>
+                <option value="4">四声 ˋ</option>
+            </select>
+        </div>
+        <div id="practice-error" style="color:#e53935;font-size:0.9rem;min-height:1.3em;margin-bottom:6px;"></div>
+        <div class="btn-row">
+            <button class="btn btn-generate" onclick="randomPractice()">🎲 随机搭配</button>
+        </div>
+    </div>
+</div>
+
+<!-- 历史记录 -->
+<div class="history-area">
+    <h3>📋 最近拼读记录 <span style="font-weight:normal;font-size:0.8rem;color:#bbb;">（点击可回看）</span></h3>
+    <div class="history-list" id="history-list">
+        <span class="no-history">还没有拼读记录，点击上方按钮开始吧！</span>
+    </div>
+    <div style="text-align:right;margin-top:10px;">
+        <button onclick="clearHistory()" style="border:none;background:transparent;color:#bbb;cursor:pointer;font-size:0.8rem;">清空记录</button>
+    </div>
+</div>
+
+<!-- 拼音规则 -->
+<details class="rules-card">
+    <summary>📖 拼音小知识（点击展开）</summary>
+    <div class="rules-content">
+        <div class="rule-item">
+            <strong>声母（23个）</strong><br>
+            b p m f d t n l<br>
+            g k h j q x<br>
+            zh ch sh r z c s<br>
+            y w
+        </div>
+        <div class="rule-item">
+            <strong>韵母（24个）</strong><br>
+            单韵母：a o e i u ü<br>
+            复韵母：ai ei ui ao ou iu ie üe<br>
+            特殊韵母：<span class="highlight-er">er</span><br>
+            前鼻韵母：an en in un ün<br>
+            后鼻韵母：ang eng ing ong
+        </div>
+        <div class="rule-item">
+            <strong>声调（4个）</strong><br>
+            一声 ˉ 高高平又平<br>
+            二声 ˊ 由低往上升<br>
+            三声 ˇ 先降后升起<br>
+            四声 ˋ 高处降到底
+        </div>
+        <div class="rule-item">
+            <strong><span class="highlight-er">er</span> 特殊韵母</strong><br>
+            er 是一个<strong>独立音节</strong>，它<strong>不与任何声母拼读</strong>。<br>
+            例如：ér（儿）、ěr（耳）、èr（二）<br>
+            er 永远单独使用！
+        </div>
+        <div class="rule-item">
+            <strong>标调规则</strong><br>
+            有 a 在，给 a 戴；<br>
+            a 不在，o、e 戴；<br>
+            要是 i、u 一起来，<br>
+            谁在后面给谁戴。
+        </div>
+        <div class="rule-item">
+            <strong>j q x 规则</strong><br>
+            j、q、x 只能和 i 行、ü 行韵母拼读，不与 a、o、e、u 直接拼读。<br>
+            j q x 见到 ü，两点要去掉（写为 u）。
+        </div>
+    </div>
+</details>
+
+<!-- 拼音总表弹窗 -->
+<div class="table-overlay" id="table-overlay">
+    <div class="table-box" id="table-box">
+        <h3>📊 拼音拼读总表</h3>
+        <div id="table-content"></div>
+        <button class="table-close" onclick="closeTable()">关闭</button>
+    </div>
+</div>
+
+<div class="btn-row" style="margin-bottom:30px;">
+    <button class="btn btn-table" onclick="openTable()">📊 查看拼音总表</button>
+</div>
+
+<footer>© 2026 教学资源平台</footer>
+
+<script>
+/* ============================================
+   拼音数据定义
+   ============================================ */
+
+// 声母列表
+const INITIALS = [
+    'b', 'p', 'm', 'f',
+    'd', 't', 'n', 'l',
+    'g', 'k', 'h',
+    'j', 'q', 'x',
+    'zh', 'ch', 'sh', 'r',
+    'z', 'c', 's',
+    'y', 'w'
+];
+
+// 韵母列表（不含 er，er 单独处理）
+const FINALS = [
+    'a', 'o', 'e', 'i', 'u', 'ü',
+    'ai', 'ei', 'ui', 'ao', 'ou', 'iu', 'ie', 'üe',
+    'an', 'en', 'in', 'un', 'ün',
+    'ang', 'eng', 'ing', 'ong'
+];
+
+// 声母与韵母的合法搭配表
+const VALID_COMBINATIONS = {
+    'b':  ['a','o','i','u','ai','ei','ao','an','en','ang','eng','ie','ian','in','iang','ing'],
+    'p':  ['a','o','i','u','ai','ei','ao','ou','an','en','ang','eng','ie','ian','in','iang','ing'],
+    'm':  ['a','o','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ie','ian','in','iang','ing','iu'],
+    'f':  ['a','o','u','ei','ou','an','en','ang','eng'],
+    'd':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ia','ie','ian','iao','iu','uan','ui','un','uo','ing'],
+    't':  ['a','e','i','u','ai','ei','ao','ou','an','ang','eng','ia','ie','ian','iao','iu','uan','ui','un','uo','ing'],
+    'n':  ['a','e','i','u','ü','ai','ei','ao','ou','an','en','ang','eng','ia','ie','ian','iao','iu','uan','ui','un','uo','üe','ing'],
+    'l':  ['a','e','i','u','ü','ai','ei','ao','ou','an','ang','eng','ia','ie','ian','iao','iu','uan','ui','un','uo','üe','ing'],
+    'g':  ['a','e','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'k':  ['a','e','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'h':  ['a','e','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'j':  ['i','ia','ie','ian','iang','iao','iu','in','ing','ü','üe','ün'],
+    'q':  ['i','ia','ie','ian','iang','iao','iu','in','ing','ü','üe','ün'],
+    'x':  ['i','ia','ie','ian','iang','iao','iu','in','ing','ü','üe','ün'],
+    'zh': ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'ch': ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'sh': ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','uang','ui','un','uo'],
+    'r':  ['e','i','u','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
+    'z':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
+    'c':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
+    's':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
+    'y':  ['a','e','i','u','ai','ao','ou','an','ang','in','ing','ie','ian','iang','iao'],
+    'w':  ['a','o','u','ai','ei','ao','ou','an','en','ang','eng']
+};
+
+// er 的四种声调
+const ER_TONES = [
+    { text: 'ér', tone: 2, name: '二声', char: '儿' },
+    { text: 'ěr', tone: 3, name: '三声', char: '耳' },
+    { text: 'èr', tone: 4, name: '四声', char: '二' }
+];
+
+// 声调映射表
+const TONE_MAP = {
+    'a': ['a', 'ā', 'á', 'ǎ', 'à'],
+    'o': ['o', 'ō', 'ó', 'ǒ', 'ò'],
+    'e': ['e', 'ē', 'é', 'ě', 'è'],
+    'i': ['i', 'ī', 'í', 'ǐ', 'ì'],
+    'u': ['u', 'ū', 'ú', 'ǔ', 'ù'],
+    'ü': ['ü', 'ǖ', 'ǘ', 'ǚ', 'ǜ']
+};
+
+const TONE_NAMES = ['', '一声 ˉ', '二声 ˊ', '三声 ˇ', '四声 ˋ'];
+const TONE_COLORS = ['', 'tone-1', 'tone-2', 'tone-3', 'tone-4'];
+
+/* ============================================
+   工具函数
+   ============================================ */
+
+/** 判断韵母是否包含某元音 */
+function vowelIndex(final) {
+    // 有 a 找 a
+    let ai = final.indexOf('a');
+    if (ai >= 0) return { pos: ai, vowel: 'a' };
+    // 没 a 找 e
+    let ei = final.indexOf('e');
+    if (ei >= 0) return { pos: ei, vowel: 'e' };
+    // 没 a 没 e 找 ou 中的 o
+    let oi = final.indexOf('ou');
+    if (oi >= 0) return { pos: oi, vowel: 'o' };
+    // iu → 标 u, ui → 标 i
+    let iui = final.indexOf('iu');
+    if (iui >= 0) return { pos: iui + 1, vowel: 'u' };
+    let uii = final.indexOf('ui');
+    if (uii >= 0) return { pos: uii, vowel: 'u' };
+    // 找最后一个元音
+    const vowels = 'aoeiuü';
+    for (let i = final.length - 1; i >= 0; i--) {
+        if (vowels.includes(final[i])) return { pos: i, vowel: final[i] };
+    }
+    return { pos: -1, vowel: '' };
+}
+
+/** 给拼音加声调 */
+function applyTone(pinyin, tone) {
+    if (tone === 0 || tone === undefined) return pinyin;
+    // j q x 后的 ü 在显示时改为 u
+    let display = pinyin;
+    const info = vowelIndex(pinyin);
+    if (info.pos >= 0 && info.vowel) {
+        const chars = TONE_MAP[info.vowel];
+        if (chars && chars[tone]) {
+            display = pinyin.substring(0, info.pos) + chars[tone] + pinyin.substring(info.pos + 1);
+        }
+    }
+    return display;
+}
+
+/** 随机取数组元素 */
+function randomPick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/** 随机整数 [min, max] */
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/* ============================================
+   拼音生成逻辑
+   ============================================ */
+
+function generatePinyin() {
+    // 约 12% 概率出 er
+    const roll = Math.random();
+    if (roll < 0.12) {
+        return generateEr();
+    }
+    return generateNormal();
+}
+
+function generateEr() {
+    const erInfo = randomPick(ER_TONES);
+    return {
+        type: 'er',
+        initial: '',
+        final: 'er',
+        tone: erInfo.tone,
+        fullPinyin: erInfo.text,
+        toneName: erInfo.name,
+        char: erInfo.char,
+        isEr: true
+    };
+}
+
+function generateNormal() {
+    // 随机选声母
+    const initial = randomPick(INITIALS);
+    // 从该声母的合法韵母中随机选
+    const validFinals = VALID_COMBINATIONS[initial];
+    const final = randomPick(validFinals);
+    // 随机声调 1-4
+    const tone = randomInt(1, 4);
+
+    // j q x 后的 ü 在拼接时保持 ü
+    let rawPinyin = initial + final;
+    let fullPinyin = applyTone(rawPinyin, tone);
+
+    return {
+        type: 'normal',
+        initial: initial,
+        final: final,
+        tone: tone,
+        fullPinyin: fullPinyin,
+        toneName: TONE_NAMES[tone],
+        isEr: false
+    };
+}
+
+/* ============================================
+   随机出题面板
+   ============================================ */
+
+let currentPinyin = null;
+let history = [];
+
+function renderPinyin(data) {
+    currentPinyin = data;
+
+    // 更新大拼音文字
+    document.getElementById('pinyin-text').textContent = data.fullPinyin;
+
+    // 更新组成部分标签
+    const partsEl = document.getElementById('pinyin-parts');
+    if (data.isEr) {
+        partsEl.innerHTML = '<span class="part-tag tag-er">特殊韵母 er</span>';
+    } else {
+        partsEl.innerHTML = `
+            <span class="part-tag tag-initial">声母: ${data.initial}</span>
+            <span class="part-tag tag-final">韵母: ${data.final}</span>
+        `;
+    }
+
+    // 更新声调指示
+    document.querySelectorAll('#panel-random .tone-dot').forEach(dot => {
+        const t = parseInt(dot.dataset.tone);
+        dot.classList.remove('active', 'tone-1', 'tone-2', 'tone-3', 'tone-4');
+        if (t === data.tone) {
+            dot.classList.add('active', TONE_COLORS[t]);
+        }
+    });
+
+    // 声调名称
+    document.getElementById('tone-name').textContent = data.toneName;
+
+    // er 特殊提示
+    const erHint = document.getElementById('er-hint');
+    if (data.isEr) {
+        erHint.innerHTML = '💡 <b>er</b> 是特殊韵母，<b>没有声母</b>，是独立音节！';
+        erHint.style.color = '#7b1fa2';
+    } else {
+        erHint.innerHTML = '';
+    }
+
+    // 添加到历史记录
+    addHistory(data);
+
+    // 重新触发动画
+    const bigEl = document.getElementById('pinyin-text');
+    bigEl.style.animation = 'none';
+    bigEl.offsetHeight;
+    bigEl.style.animation = 'fadeInUp 0.5s ease';
+}
+
+function addHistory(data) {
+    // 去重
+    history = history.filter(h => h.fullPinyin !== data.fullPinyin);
+    history.unshift(data);
+    if (history.length > 12) history.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const el = document.getElementById('history-list');
+    if (history.length === 0) {
+        el.innerHTML = '<span class="no-history">还没有拼读记录，点击上方按钮开始吧！</span>';
+        return;
+    }
+    el.innerHTML = history.map((h, i) => {
+        const cls = h.isEr ? 'history-item special-er' : 'history-item';
+        return `<span class="${cls}" onclick="replayHistory(${i})" title="${h.isEr ? '独立音节 er' : h.initial + ' + ' + h.final} · ${h.toneName}">${h.fullPinyin}</span>`;
+    }).join('');
+}
+
+function replayHistory(index) {
+    const data = history[index];
+    if (data) {
+        // 切换到随机模式
+        switchMode('random');
+        renderPinyin(data);
+    }
+}
+
+function clearHistory() {
+    history = [];
+    renderHistory();
+}
+
+/* ============================================
+   自由拼读面板
+   ============================================ */
+
+function initPracticeSelects() {
+    const selInitial = document.getElementById('sel-initial');
+    const selFinal = document.getElementById('sel-final');
+
+    // 声母选项
+    selInitial.innerHTML = '<option value="">选择声母</option>' +
+        INITIALS.map(s => `<option value="${s}">${s}</option>`).join('');
+
+    // 韵母选项（全部韵母，包括 er）
+    const allFinals = [...FINALS, 'er'];
+    selFinal.innerHTML = '<option value="">选择韵母</option>' +
+        allFinals.map(f => `<option value="${f}">${f}</option>`).join('');
+}
+
+function updatePractice() {
+    const initial = document.getElementById('sel-initial').value;
+    const final = document.getElementById('sel-final').value;
+    const tone = parseInt(document.getElementById('sel-tone').value);
+    const errorEl = document.getElementById('practice-error');
+    const textEl = document.getElementById('practice-text');
+    const partsEl = document.getElementById('practice-parts');
+
+    errorEl.textContent = '';
+
+    // 未选完
+    if (!initial || !final || tone === 0) {
+        textEl.textContent = '—';
+        partsEl.innerHTML = '';
+        resetPracticeTones();
+        return;
+    }
+
+    // er 特殊规则：er 不能有声母
+    if (final === 'er') {
+        if (initial) {
+            errorEl.textContent = '⚠️ er 是特殊韵母，不能与声母拼读！请清空声母或选择其他韵母。';
+            textEl.textContent = '—';
+            partsEl.innerHTML = '';
+            resetPracticeTones();
+            return;
+        }
+        // er 只有 2、3、4 声
+        const erToneMap = { 2: 'ér', 3: 'ěr', 4: 'èr' };
+        if (!erToneMap[tone]) {
+            errorEl.textContent = '⚠️ er 只有二声(ér)、三声(ěr)、四声(èr)，没有一声哦！';
+            textEl.textContent = '—';
+            partsEl.innerHTML = '';
+            resetPracticeTones();
+            return;
+        }
+        textEl.textContent = erToneMap[tone];
+        partsEl.innerHTML = '<span class="part-tag tag-er">特殊韵母 er（独立音节）</span>';
+        setPracticeTone(tone);
+        return;
+    }
+
+    // 检查合法性
+    const validFinals = VALID_COMBINATIONS[initial];
+    if (!validFinals || !validFinals.includes(final)) {
+        errorEl.textContent = `⚠️ 声母 "${initial}" 和韵母 "${final}" 不能拼读！请重新选择。`;
+        textEl.textContent = '—';
+        partsEl.innerHTML = '';
+        resetPracticeTones();
+        return;
+    }
+
+    // 合法拼读
+    let rawPinyin = initial + final;
+    let fullPinyin = applyTone(rawPinyin, tone);
+    textEl.textContent = fullPinyin;
+    partsEl.innerHTML = `
+        <span class="part-tag tag-initial">声母: ${initial}</span>
+        <span class="part-tag tag-final">韵母: ${final}</span>
+    `;
+    setPracticeTone(tone);
+}
+
+function setPracticeTone(tone) {
+    document.querySelectorAll('#practice-tones .tone-dot').forEach(dot => {
+        const t = parseInt(dot.dataset.tone);
+        dot.classList.remove('active', 'tone-1', 'tone-2', 'tone-3', 'tone-4');
+        if (t === tone) {
+            dot.classList.add('active', TONE_COLORS[t]);
+        }
+    });
+}
+
+function resetPracticeTones() {
+    document.querySelectorAll('#practice-tones .tone-dot').forEach(dot => {
+        dot.classList.remove('active', 'tone-1', 'tone-2', 'tone-3', 'tone-4');
+    });
+}
+
+function randomPractice() {
+    // 随机生成一个合法搭配填充到下拉框
+    const data = generatePinyin();
+    document.getElementById('sel-initial').value = data.initial || '';
+    document.getElementById('sel-final').value = data.final || '';
+    document.getElementById('sel-tone').value = data.tone || '0';
+    document.getElementById('practice-error').textContent = '';
+    updatePractice();
+
+    // 同步文字动画
+    const textEl = document.getElementById('practice-text');
+    textEl.style.animation = 'none';
+    textEl.offsetHeight;
+    textEl.style.animation = 'fadeInUp 0.5s ease';
+}
+
+/* ============================================
+   模式切换
+   ============================================ */
+function switchMode(mode) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-panel').forEach(p => p.style.display = 'none');
+
+    if (mode === 'random') {
+        document.querySelector('.mode-btn:nth-child(1)').classList.add('active');
+        document.getElementById('panel-random').style.display = 'block';
+    } else {
+        document.querySelector('.mode-btn:nth-child(2)').classList.add('active');
+        document.getElementById('panel-practice').style.display = 'block';
+    }
+}
+
+/* ============================================
+   拼音总表
+   ============================================ */
+function openTable() {
+    const overlay = document.getElementById('table-overlay');
+    const content = document.getElementById('table-content');
+
+    // 构建表头：所有韵母
+    const allFinalsForTable = [...FINALS, 'er'];
+    let html = '<table><thead><tr><th>声母</th>';
+    allFinalsForTable.forEach(f => {
+        html += `<th>${f}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    // 构建每一行
+    INITIALS.forEach(initial => {
+        html += `<tr><th>${initial}</th>`;
+        const validSet = new Set(VALID_COMBINATIONS[initial] || []);
+        allFinalsForTable.forEach(final => {
+            if (final === 'er') {
+                html += '<td style="color:#ccc">-</td>';
+            } else if (validSet.has(final)) {
+                const pinyin = applyTone(initial + final, 1);
+                html += `<td class="valid" onclick="quickGenerate('${initial}','${final}')" title="${initial}+${final} → ${pinyin}">✓</td>`;
+            } else {
+                html += '<td style="color:#eee">-</td>';
+            }
+        });
+        html += '</tr>';
+    });
+
+    // er 特殊行
+    html += '<tr style="background:#f3e5f5;"><th style="color:#7b1fa2;">er</th>';
+    allFinalsForTable.forEach(final => {
+        if (final === 'er') {
+            html += '<td class="valid" onclick="quickGenerateEr()" style="background:#e1bee7;color:#6a1b9a;" title="er 是独立音节">★</td>';
+        } else {
+            html += '<td style="color:#eee">-</td>';
+        }
+    });
+    html += '</tr>';
+
+    html += '</tbody></table>';
+    html += '<p style="text-align:center;margin-top:12px;font-size:0.85rem;color:#999;">✓ 表示可以拼读，点击可快速生成 | ★ er 是独立音节</p>';
+
+    content.innerHTML = html;
+    overlay.classList.add('show');
+}
+
+function closeTable() {
+    document.getElementById('table-overlay').classList.remove('show');
+}
+
+function quickGenerate(initial, final) {
+    closeTable();
+    switchMode('random');
+    const tone = randomInt(1, 4);
+    const rawPinyin = initial + final;
+    const fullPinyin = applyTone(rawPinyin, tone);
+    renderPinyin({
+        type: 'normal',
+        initial: initial,
+        final: final,
+        tone: tone,
+        fullPinyin: fullPinyin,
+        toneName: TONE_NAMES[tone],
+        isEr: false
+    });
+}
+
+function quickGenerateEr() {
+    closeTable();
+    switchMode('random');
+    renderPinyin(generateEr());
+}
+
+// 点击遮罩关闭
+document.getElementById('table-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeTable();
+});
+
+/* ============================================
+   初始化
+   ============================================ */
+initPracticeSelects();
+generatePinyin();  // 初始随机生成一个
+</script>
+</body>
+</html>

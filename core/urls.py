@@ -11,4 +11,5 @@ urlpatterns = [
     path('number-line', views.number_line, name='number_line'),
     path('multiplication', views.multiplication, name='multiplication'),
     path('division', views.division, name='division'),
+    path('pinyin', views.pinyin, name='pinyin'),
 ]
