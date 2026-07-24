@@ -473,7 +473,11 @@ function combine(initial, finalStr, tone) {
             issues.push(`声母 "${initial}" 和韵母 "${finalStr}" 不能拼读`);
             valid = false;
         }
-        const raw = initial + finalStr;
+        let raw = initial + finalStr;
+        // j、q、x 后的 ü 两点要去掉
+        if (['j','q','x'].includes(initial)) {
+            raw = raw.replace(/ü/g, 'u');
+        }
         fullPinyin = applyTone(raw, tone);
         toneName = TONE_NAMES[tone] || '';
     } else {

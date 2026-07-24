@@ -171,6 +171,13 @@ def pinyin_extract_tone(final=None):
     return random.randint(1, 4)
 
 
+def pinyin_normalize_u_umlaut(raw_pinyin, initial):
+    """j、q、x 后的 ü 两点要去掉，写成 u。"""
+    if initial in ('j', 'q', 'x'):
+        return raw_pinyin.replace('ü', 'u')
+    return raw_pinyin
+
+
 def pinyin_combine(initial, final, tone):
     """将声母、韵母、声调组合为完整拼音。
     返回包含完整拼音及元数据的字典，方便前端独立渲染各组件。
@@ -185,6 +192,7 @@ def pinyin_combine(initial, final, tone):
         full_pinyin = er_info['text']
     else:
         raw_pinyin = initial + final
+        raw_pinyin = pinyin_normalize_u_umlaut(raw_pinyin, initial)
         full_pinyin = pinyin_apply_tone(raw_pinyin, tone)
 
     return {
