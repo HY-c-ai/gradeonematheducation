@@ -84,7 +84,7 @@ PINYIN_VALID_COMBINATIONS = {
     'c':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
     's':  ['a','e','i','u','ai','ei','ao','ou','an','en','ang','eng','ua','uai','uan','ui','un','uo'],
     'y':  ['a','e','i','u','ai','ao','ou','an','ang','in','ing','ie','ian','iang','iao'],
-    'w':  ['a','o','u','ai','ei','ao','ou','an','en','ang','eng']
+    'w':  ['a','o','u','ai','ei','ao','an','en','ang','eng']
 }
 
 PINYIN_ER_TONES = [
@@ -103,6 +103,46 @@ PINYIN_TONE_MAP = {
 }
 
 PINYIN_TONE_NAMES = ['', '一声 ˉ', '二声 ˊ', '三声 ˇ', '四声 ˋ']
+
+# ============================================================
+#  整体认读音节 - 16个（不需拼读，直接整体认读）
+# ============================================================
+PINYIN_ZHENGTI_RENDU = [
+    'zhi', 'chi', 'shi', 'ri',
+    'zi', 'ci', 'si',
+    'yi', 'wu', 'yu',
+    'ye', 'yue', 'yuan', 'yin', 'yun', 'ying'
+]
+
+# ============================================================
+#  三拼音节 - 声母 + 介母 + 韵母 三段式拼读
+#  介母：i / u / ü
+# ============================================================
+PINYIN_MEDIALS = ['i', 'u', 'ü']
+
+PINYIN_SANPIN_DATA = {
+    # 声母 -> {介母: [韵母（不含介母部分）]}
+    'b': {'i': ['ao', 'an']},
+    'p': {'i': ['ao', 'an']},
+    'm': {'i': ['ao', 'an']},
+    'd': {'i': ['ao', 'an', 'ang'], 'u': ['o', 'an']},
+    't': {'i': ['ao', 'an', 'ang'], 'u': ['o', 'an']},
+    'n': {'i': ['ao', 'an', 'ang'], 'u': ['o', 'an'], 'ü': ['e']},
+    'l': {'i': ['ao', 'an', 'ang'], 'u': ['o', 'an'], 'ü': ['e']},
+    'g': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'k': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'h': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'j': {'i': ['a', 'ao', 'an', 'ang', 'ong'], 'ü': ['e', 'an', 'n']},
+    'q': {'i': ['a', 'ao', 'an', 'ang', 'ong'], 'ü': ['e', 'an', 'n']},
+    'x': {'i': ['a', 'ao', 'an', 'ang', 'ong'], 'ü': ['e', 'an', 'n']},
+    'zh': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'ch': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'sh': {'u': ['a', 'o', 'ai', 'an', 'ang']},
+    'r': {'u': ['o', 'an']},
+    'z': {'u': ['o', 'an']},
+    'c': {'u': ['o', 'an']},
+    's': {'u': ['o', 'an']},
+}
 
 
 # ============================================================
@@ -206,6 +246,68 @@ def pinyin_combine(initial, final, tone):
 
 
 # ============================================================
+#  整体认读音节 - 抽取函数
+# ============================================================
+
+def zhengti_extract():
+    """随机抽取一个整体认读音节并赋予随机声调。
+    整体认读音节作为一个整体，不需要拆分为声母+韵母。
+    """
+    base = random.choice(PINYIN_ZHENGTI_RENDU)
+    tone = random.randint(1, 4)
+    full_pinyin = pinyin_apply_tone(base, tone)
+    return {
+        'base': base,
+        'tone': tone,
+        'full_pinyin': full_pinyin,
+        'tone_name': PINYIN_TONE_NAMES[tone] if 1 <= tone <= 4 else '',
+        'type': 'zhengti'
+    }
+
+
+# ============================================================
+#  三拼音节 - 抽取函数
+# ============================================================
+
+def sanpin_extract_initial():
+    """【三拼】仅随机抽取一个可参与三拼的声母。"""
+    return random.choice(list(PINYIN_SANPIN_DATA.keys()))
+
+
+def sanpin_extract_medial(initial):
+    """【三拼】根据声母随机抽取一个兼容的介母。"""
+    if initial and initial in PINYIN_SANPIN_DATA:
+        return random.choice(list(PINYIN_SANPIN_DATA[initial].keys()))
+    return random.choice(PINYIN_MEDIALS)
+
+
+def sanpin_extract_final(initial, medial):
+    """【三拼】根据声母和介母随机抽取一个兼容的韵母。"""
+    if (initial and medial and
+            initial in PINYIN_SANPIN_DATA and
+            medial in PINYIN_SANPIN_DATA[initial]):
+        return random.choice(PINYIN_SANPIN_DATA[initial][medial])
+    return random.choice(PINYIN_FINALS)
+
+
+def sanpin_combine(initial, medial, final_base, tone):
+    """【三拼】将声母 + 介母 + 韵母 + 声调组合为完整拼音。"""
+    raw_pinyin = initial + medial + final_base
+    raw_pinyin = pinyin_normalize_u_umlaut(raw_pinyin, initial)
+    full_pinyin = pinyin_apply_tone(raw_pinyin, tone)
+    return {
+        'initial': initial,
+        'medial': medial,
+        'final': medial + final_base,  # 完整韵母（含介母）
+        'final_base': final_base,       # 纯韵母（不含介母）
+        'tone': tone,
+        'full_pinyin': full_pinyin,
+        'tone_name': PINYIN_TONE_NAMES[tone] if 1 <= tone <= 4 else '',
+        'type': 'sanpin'
+    }
+
+
+# ============================================================
 #  拼音模块 - 视图
 # ============================================================
 
@@ -219,6 +321,9 @@ def pinyin(request):
             'er_tones': PINYIN_ER_TONES,
             'tone_map': PINYIN_TONE_MAP,
             'tone_names': PINYIN_TONE_NAMES,
+            'zhengti_rendu': PINYIN_ZHENGTI_RENDU,
+            'sanpin_medials': PINYIN_MEDIALS,
+            'sanpin_data': PINYIN_SANPIN_DATA,
         }
     }
     return render(request, 'pinyin.html', context)

@@ -99,6 +99,7 @@
         .btn-r-initial { color: #1565c0; border-color: #90caf9; }
         .btn-r-final   { color: #c62828; border-color: #ef9a9a; }
         .btn-r-tone    { color: #e65100; border-color: #ffcc80; }
+        .btn-r-medial  { color: #2e7d32; border-color: #a5d6a7; }
 
         /* 组合结果区 */
         .combined-area {
@@ -274,6 +275,8 @@
     <div class="mode-tabs">
         <button class="mode-btn active" onclick="switchMode('random')">🎲 随机出题</button>
         <button class="mode-btn" onclick="switchMode('practice')">📝 自由拼读</button>
+        <button class="mode-btn" onclick="switchMode('zhengti')">📚 整体认读</button>
+        <button class="mode-btn" onclick="switchMode('sanpin')">🔗 三拼音节</button>
     </div>
 
     <!-- ==================== 随机出题面板 ==================== -->
@@ -339,6 +342,58 @@
             <button class="btn btn-all" onclick="randomPractice()">🎲 随机搭配</button>
         </div>
     </div>
+
+    <!-- ==================== 整体认读音节面板 ==================== -->
+    <div class="mode-panel" id="panel-zhengti" style="display:none;">
+        <div class="combined-area">
+            <div class="combined-pinyin" id="zhengti-text">—</div>
+            <div class="combined-detail" id="zhengti-detail"></div>
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-all" onclick="extractZhengti()">🎲 随机抽取</button>
+        </div>
+        <p style="color:#888;font-size:0.9rem;margin-top:10px;">
+            💡 整体认读音节<b>不需要拼读</b>，直接整体认读即可
+        </p>
+    </div>
+
+    <!-- ==================== 三拼音节面板 ==================== -->
+    <div class="mode-panel" id="panel-sanpin" style="display:none;">
+        <div class="component-row">
+            <div class="component-card card-initial" id="sp-card-initial">
+                <div class="component-label">🔵 声母</div>
+                <div class="component-value" id="sp-comp-initial">—</div>
+                <button class="btn-roll btn-r-initial" onclick="extractSanpinInitial()">🔄 换声母</button>
+            </div>
+            <div class="component-card" id="sp-card-medial" style="background:#e8f5e9;border-color:#a5d6a7;">
+                <div class="component-label" style="color:#2e7d32;">🟢 介母</div>
+                <div class="component-value" id="sp-comp-medial" style="color:#2e7d32;">—</div>
+                <button class="btn-roll btn-r-medial" onclick="extractSanpinMedial()">🔄 换介母</button>
+            </div>
+            <div class="component-card card-final" id="sp-card-final">
+                <div class="component-label">🔴 韵母</div>
+                <div class="component-value" id="sp-comp-final">—</div>
+                <button class="btn-roll btn-r-final" onclick="extractSanpinFinal()">🔄 换韵母</button>
+            </div>
+            <div class="component-card card-tone" id="sp-card-tone">
+                <div class="component-label">🟠 声调</div>
+                <div class="component-value" id="sp-comp-tone">—</div>
+                <button class="btn-roll btn-r-tone" onclick="extractSanpinTone()">🔄 换声调</button>
+            </div>
+        </div>
+
+        <div class="combined-area">
+            <div class="combined-pinyin" id="sanpin-text">—</div>
+            <div class="combined-detail" id="sanpin-detail"></div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-all" onclick="extractSanpinAll()">🎲 全部随机</button>
+        </div>
+        <p style="color:#888;font-size:0.9rem;margin-top:10px;">
+            💡 三拼音节由 <b>声母 + 介母 + 韵母</b> 三部分组成
+        </p>
+    </div>
 </div>
 
 <!-- 历史记录 -->
@@ -400,6 +455,9 @@ const VALID_COMBOS = PD.valid_combinations;
 const ER_TONES = PD.er_tones;
 const TONE_MAP = PD.tone_map;
 const TONE_NAMES = PD.tone_names;
+const ZHENGTI_RENDU = PD.zhengti_rendu;
+const SANPIN_MEDIALS = PD.sanpin_medials;
+const SANPIN_DATA = PD.sanpin_data;
 
 // ==========================================
 // 2. 三组件独立状态
@@ -408,7 +466,15 @@ const state = {
     initial: '',   // 声母（空字符串表示未选）
     final: '',     // 韵母
     tone: 0,       // 声调 1-4，0 表示未选
-    mode: 'random' // 'random' | 'practice'
+    mode: 'random' // 'random' | 'practice' | 'zhengti' | 'sanpin'
+};
+
+// 三拼音节独立状态
+const spState = {
+    initial: '',     // 声母
+    medial: '',      // 介母 i/u/ü
+    finalBase: '',   // 韵母（不含介母）
+    tone: 0          // 声调
 };
 
 // ==========================================
@@ -544,6 +610,139 @@ function extractAll() {
 }
 
 // ==========================================
+// 4b. 整体认读音节抽取
+// ==========================================
+
+/** 随机抽取一个整体认读音节 */
+function extractZhengti() {
+    const base = ZHENGTI_RENDU[Math.floor(Math.random() * ZHENGTI_RENDU.length)];
+    const tone = Math.floor(Math.random() * 4) + 1;
+    const fullPinyin = applyTone(base, tone);
+    const toneName = TONE_NAMES[tone] || '';
+
+    document.getElementById('zhengti-text').textContent = fullPinyin;
+    document.getElementById('zhengti-text').style.animation = 'none';
+    document.getElementById('zhengti-text').offsetHeight;
+    document.getElementById('zhengti-text').style.animation = 'fadeInUp 0.5s ease';
+    document.getElementById('zhengti-detail').innerHTML =
+        `<span style="color:#7b1fa2;">📚 <b>${base}</b> · ${toneName} —— 整体认读，不需拼读</span>`;
+
+    // 添加到历史记录
+    addHistory({
+        initial: '', final: '', tone: tone, fullPinyin: fullPinyin,
+        toneName: toneName, isEr: false, valid: true, issues: [],
+        type: 'zhengti', base: base
+    });
+}
+
+// ==========================================
+// 4c. 三拼音节抽取
+// ==========================================
+
+/** 【三拼】仅重新随机声母 */
+function extractSanpinInitial() {
+    const keys = Object.keys(SANPIN_DATA);
+    spState.initial = keys[Math.floor(Math.random() * keys.length)];
+    // 重新抽取兼容的介母
+    const medials = Object.keys(SANPIN_DATA[spState.initial]);
+    spState.medial = medials[Math.floor(Math.random() * medials.length)];
+    // 重新抽取兼容的韵母
+    const finals = SANPIN_DATA[spState.initial][spState.medial];
+    spState.finalBase = finals[Math.floor(Math.random() * finals.length)];
+    renderSanpin();
+}
+
+/** 【三拼】仅重新随机介母 */
+function extractSanpinMedial() {
+    if (!spState.initial) {
+        extractSanpinInitial();
+        return;
+    }
+    const medials = Object.keys(SANPIN_DATA[spState.initial]);
+    spState.medial = medials[Math.floor(Math.random() * medials.length)];
+    // 介母变了，韵母也要重新抽
+    const finals = SANPIN_DATA[spState.initial][spState.medial];
+    spState.finalBase = finals[Math.floor(Math.random() * finals.length)];
+    renderSanpin();
+}
+
+/** 【三拼】仅重新随机韵母 */
+function extractSanpinFinal() {
+    if (!spState.initial || !spState.medial) {
+        extractSanpinInitial();
+        return;
+    }
+    const finals = SANPIN_DATA[spState.initial][spState.medial];
+    spState.finalBase = finals[Math.floor(Math.random() * finals.length)];
+    renderSanpin();
+}
+
+/** 【三拼】仅重新随机声调 */
+function extractSanpinTone() {
+    spState.tone = Math.floor(Math.random() * 4) + 1;
+    renderSanpin();
+}
+
+/** 【三拼】全部随机 */
+function extractSanpinAll() {
+    const keys = Object.keys(SANPIN_DATA);
+    spState.initial = keys[Math.floor(Math.random() * keys.length)];
+    const medials = Object.keys(SANPIN_DATA[spState.initial]);
+    spState.medial = medials[Math.floor(Math.random() * medials.length)];
+    const finals = SANPIN_DATA[spState.initial][spState.medial];
+    spState.finalBase = finals[Math.floor(Math.random() * finals.length)];
+    spState.tone = Math.floor(Math.random() * 4) + 1;
+    renderSanpin();
+}
+
+/** 【三拼】渲染三拼音节 UI */
+function renderSanpin() {
+    const { initial, medial, finalBase, tone } = spState;
+
+    // 渲染声母
+    document.getElementById('sp-comp-initial').textContent = initial || '—';
+    // 渲染介母
+    document.getElementById('sp-comp-medial').textContent = medial || '—';
+    // 渲染韵母（显示不含介母的部分）
+    document.getElementById('sp-comp-final').textContent = finalBase || '—';
+    // 渲染声调
+    const toneDisplay = ['', 'ˉ 一声', 'ˊ 二声', 'ˇ 三声', 'ˋ 四声'];
+    document.getElementById('sp-comp-tone').textContent = tone > 0 ? toneDisplay[tone] : '—';
+
+    // 组合完整拼音
+    if (initial && medial && finalBase && tone > 0) {
+        let raw = initial + medial + finalBase;
+        if (['j','q','x'].includes(initial)) {
+            raw = raw.replace(/ü/g, 'u');
+        }
+        const fullPinyin = applyTone(raw, tone);
+        const toneName = TONE_NAMES[tone] || '';
+
+        const textEl = document.getElementById('sanpin-text');
+        textEl.textContent = fullPinyin;
+        textEl.style.animation = 'none';
+        textEl.offsetHeight;
+        textEl.style.animation = 'fadeInUp 0.5s ease';
+
+        document.getElementById('sanpin-detail').innerHTML =
+            `<span style="color:#1565c0;">声母: ${initial}</span> + ` +
+            `<span style="color:#2e7d32;">介母: ${medial}</span> + ` +
+            `<span style="color:#c62828;">韵母: ${finalBase}</span> · ${toneName}`;
+
+        // 添加到历史记录
+        addHistory({
+            initial: initial, final: medial + finalBase, tone: tone,
+            fullPinyin: fullPinyin, toneName: toneName, isEr: false,
+            valid: true, issues: [], type: 'sanpin',
+            sanpinParts: { initial, medial, finalBase }
+        });
+    } else {
+        document.getElementById('sanpin-text').textContent = '—';
+        document.getElementById('sanpin-detail').textContent = '';
+    }
+}
+
+// ==========================================
 // 5. 渲染函数
 // ==========================================
 
@@ -627,8 +826,21 @@ function renderHistory() {
         return;
     }
     el.innerHTML = history.map((h, i) => {
-        const cls = h.isEr ? 'history-item special-er' : 'history-item';
-        const title = h.isEr ? '独立音节 er' : `${h.initial} + ${h.final} · ${h.toneName}`;
+        let cls = 'history-item';
+        let title = '';
+        if (h.isEr) {
+            cls = 'history-item special-er';
+            title = '独立音节 er';
+        } else if (h.type === 'zhengti') {
+            cls = 'history-item';
+            title = `整体认读 ${h.base || ''} · ${h.toneName}`;
+        } else if (h.type === 'sanpin') {
+            cls = 'history-item';
+            const sp = h.sanpinParts || {};
+            title = `三拼 ${sp.initial || ''} + ${sp.medial || ''} + ${sp.finalBase || ''} · ${h.toneName}`;
+        } else {
+            title = `${h.initial} + ${h.final} · ${h.toneName}`;
+        }
         return `<span class="${cls}" onclick="replayHistory(${i})" title="${title}">${h.fullPinyin}</span>`;
     }).join('');
 }
@@ -718,9 +930,17 @@ function switchMode(mode) {
     if (mode === 'random') {
         document.querySelector('.mode-btn:nth-child(1)').classList.add('active');
         document.getElementById('panel-random').style.display = 'block';
-    } else {
+    } else if (mode === 'practice') {
         document.querySelector('.mode-btn:nth-child(2)').classList.add('active');
         document.getElementById('panel-practice').style.display = 'block';
+    } else if (mode === 'zhengti') {
+        document.querySelector('.mode-btn:nth-child(3)').classList.add('active');
+        document.getElementById('panel-zhengti').style.display = 'block';
+        extractZhengti();
+    } else if (mode === 'sanpin') {
+        document.querySelector('.mode-btn:nth-child(4)').classList.add('active');
+        document.getElementById('panel-sanpin').style.display = 'block';
+        extractSanpinAll();
     }
 }
 
